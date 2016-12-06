@@ -1,7 +1,7 @@
-package com.example.model;
+package com.protocol.model;
 
-import com.example.annotation.Caller;
-import com.example.annotation.Provider;
+import com.protocol.annotation.Caller;
+import com.protocol.annotation.Provider;
 import com.google.auto.service.AutoService;
 
 import java.util.LinkedHashSet;

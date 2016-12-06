@@ -4,7 +4,9 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/QiaoBa.iml" filepath="$PROJECT_DIR$/QiaoBa.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/protocol-annotation/protocol-annotation.iml" filepath="$PROJECT_DIR$/protocol-annotation/protocol-annotation.iml" />
       <module fileurl="file://$PROJECT_DIR$/protocolinterpreter/protocolinterpreter.iml" filepath="$PROJECT_DIR$/protocolinterpreter/protocolinterpreter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/secondmodule/secondmodule.iml" filepath="$PROJECT_DIR$/secondmodule/secondmodule.iml" />
     </modules>
   </component>
 </project>

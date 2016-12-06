@@ -1,4 +1,4 @@
-package com.example.annotation;
+package com.protocol.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,6 +11,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
-public @interface Caller {
+public @interface Provider {
     String value();
 }

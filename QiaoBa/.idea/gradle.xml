@@ -9,7 +9,9 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/protocol-annotation" />
             <option value="$PROJECT_DIR$/protocolinterpreter" />
+            <option value="$PROJECT_DIR$/secondmodule" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

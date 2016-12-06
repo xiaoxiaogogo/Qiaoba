@@ -1,1 +1,1 @@
-include ':app', ':protocolinterpreter'
+include ':app', ':protocolinterpreter', ':protocol-annotation', ':secondmodule'
