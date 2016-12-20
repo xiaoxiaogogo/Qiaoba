@@ -6,6 +6,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
@@ -18,6 +19,11 @@ import javax.lang.model.util.Elements;
 
 public class DataClassCreator {
 
+     private static String createClassPackageName = "com.protocol.data";
+
+     public static String getClassNameForPackageName(String simpleName){
+          return createClassPackageName + "." + simpleName;
+     }
 
      public void generateCode(Elements elementUtils, Filer filer, ElementHolder elementHolder, boolean isCaller){
           if(isCaller) {
@@ -26,10 +32,10 @@ public class DataClassCreator {
                        .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build())
                        .addField(FieldSpec.builder(String.class, "value")
                                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                               .initializer(elementHolder.getValueName())
+                               .initializer("$S", elementHolder.getValueName())
                                .build()).build();
 
-               JavaFile javaFile = JavaFile.builder("com.protocol.data", callStub).build();
+               JavaFile javaFile = JavaFile.builder(createClassPackageName, callStub).build();
                try {
                     javaFile.writeTo(filer);
                } catch (IOException e) {
@@ -42,11 +48,11 @@ public class DataClassCreator {
                        .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build())
                        .addField(FieldSpec.builder(String.class, "value")
                                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                               .initializer(elementHolder.getClazzName())
+                               .initializer("$S", elementHolder.getClazzName())
                                .build())
                        .build();
 
-               JavaFile javaFile = JavaFile.builder("com.protocol.data", providerStub).build();
+               JavaFile javaFile = JavaFile.builder(createClassPackageName, providerStub).build();
                try {
                     javaFile.writeTo(filer);
                } catch (IOException e) {
@@ -54,5 +60,11 @@ public class DataClassCreator {
                     e.printStackTrace();
                }
           }
+     }
+
+     public static String getValueFromClass(Class callerClazz) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+          Field valueField = callerClazz.getDeclaredField("value");
+          valueField.setAccessible(true);
+          return (String) valueField.get(callerClazz.newInstance());
      }
 }
