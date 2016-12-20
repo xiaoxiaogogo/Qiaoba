@@ -4,7 +4,12 @@ import com.protocol.annotation.Caller;
 import com.protocol.annotation.Provider;
 import com.google.auto.service.AutoService;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -14,6 +19,8 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 
@@ -51,7 +58,59 @@ public class ProtocolProcesser extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        //create caller stub class
+        Map<String, ElementHolder> callerMap = collectClassInfo(roundEnv, Caller.class, ElementKind.INTERFACE);
+        DataClassCreator classCreator = new DataClassCreator();
+        if(callerMap.keySet().size() > 0) {
+            for (String value : callerMap.keySet()) {
+                classCreator.generateCode(mElementUtils, mFiler, callerMap.get(value), true);
+            }
+        }else {
+            System.out.println("caller size is 0");
+        }
+
+        //create provider stub class
+        Map<String, ElementHolder> providerMap = collectClassInfo(roundEnv, Provider.class, ElementKind.CLASS);
+        if(providerMap.keySet().size() > 0){
+            for (String value : providerMap.keySet()){
+                classCreator.generateCode(mElementUtils, mFiler, providerMap.get(value), false);
+            }
+        }else {
+            System.out.println("provider size is 0");
+        }
 
         return true;
     }
+
+    private Map<String , ElementHolder> collectClassInfo(RoundEnvironment roundEnv, Class<? extends Annotation> clazz, ElementKind kind){
+        Map<String, ElementHolder> map = new HashMap<>();
+        Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(clazz);
+        for (Element element : elements){
+            if(element.getKind() != kind){
+                throw new IllegalArgumentException(element.getSimpleName() + "'s annotation must be on a " + kind.name());
+            }
+
+
+            try {
+                TypeElement typeElement = (TypeElement) element;
+                Annotation annotation = typeElement.getAnnotation(clazz);
+                Method method = clazz.getDeclaredMethod("value");
+                method.setAccessible(true);
+                String value = (String) method.invoke(annotation);
+                String clazzName = typeElement.getQualifiedName().toString();
+                String simpleName = typeElement.getSimpleName().toString();
+                map.put(value, new ElementHolder(typeElement, value, clazzName, simpleName));
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+        }
+        return map;
+    }
+
+
 }
