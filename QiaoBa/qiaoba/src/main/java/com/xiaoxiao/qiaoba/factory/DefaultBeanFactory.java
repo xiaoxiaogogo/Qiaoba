@@ -1,4 +1,4 @@
-package com.protocol.factory;
+package com.xiaoxiao.qiaoba.factory;
 
 import java.util.HashMap;
 import java.util.Map;

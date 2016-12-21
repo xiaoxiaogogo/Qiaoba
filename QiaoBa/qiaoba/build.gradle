@@ -26,8 +26,10 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:23.0.0'
+    compile 'com.android.support:appcompat-v7:23.0.1'
     testCompile 'junit:junit:4.12'
-    compile project(':protocol-annotation')
-    compile project(':qiaoba')
+
+    compile 'com.squareup:javapoet:1.7.0'
+    compile 'com.google.auto.service:auto-service:1.0-rc2'
+    compile project(':protocolinterpreter')
 }

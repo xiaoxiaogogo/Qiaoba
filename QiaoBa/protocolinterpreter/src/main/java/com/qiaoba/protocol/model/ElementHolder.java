@@ -1,4 +1,4 @@
-package com.protocol.model;
+package com.qiaoba.protocol.model;
 
 import javax.lang.model.element.TypeElement;
 

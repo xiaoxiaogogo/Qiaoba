@@ -1,8 +1,8 @@
-package com.protocol;
+package com.xiaoxiao.qiaoba;
 
-import com.protocol.factory.BeanFactory;
-import com.protocol.factory.DefaultBeanFactory;
-import com.protocol.model.DataClassCreator;
+import com.qiaoba.protocol.model.DataClassCreator;
+import com.xiaoxiao.qiaoba.factory.BeanFactory;
+import com.xiaoxiao.qiaoba.factory.DefaultBeanFactory;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -25,7 +25,6 @@ public class ProtocolInterpreter {
     private DefaultBeanFactory mDefaultFactory;
 
     private boolean mIsEnableCheckMethod;
-
 
 
     static class Holder{

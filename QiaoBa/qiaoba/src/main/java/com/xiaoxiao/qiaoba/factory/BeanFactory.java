@@ -1,4 +1,4 @@
-package com.protocol.factory;
+package com.xiaoxiao.qiaoba.factory;
 
 /**
  * Created by wangfei on 2016/12/20.

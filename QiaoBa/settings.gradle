@@ -1,1 +1,1 @@
-include ':app', ':protocolinterpreter', ':protocol-annotation', ':secondmodule'
+include ':app', ':protocolinterpreter', ':protocol-annotation', ':secondmodule', ':qiaoba'

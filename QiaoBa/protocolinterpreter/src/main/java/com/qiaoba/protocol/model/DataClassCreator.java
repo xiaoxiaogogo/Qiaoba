@@ -1,4 +1,4 @@
-package com.protocol.model;
+package com.qiaoba.protocol.model;
 
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
@@ -10,7 +10,6 @@ import java.lang.reflect.Field;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.PackageElement;
 import javax.lang.model.util.Elements;
 
 /**
@@ -19,7 +18,7 @@ import javax.lang.model.util.Elements;
 
 public class DataClassCreator {
 
-     private static String createClassPackageName = "com.protocol.data";
+     private static String createClassPackageName = "com.qiaoba.protocol.data";
 
      public static String getClassNameForPackageName(String simpleName){
           return createClassPackageName + "." + simpleName;

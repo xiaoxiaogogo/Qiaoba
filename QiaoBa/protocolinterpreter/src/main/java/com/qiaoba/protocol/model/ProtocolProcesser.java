@@ -1,4 +1,4 @@
-package com.protocol.model;
+package com.qiaoba.protocol.model;
 
 import com.protocol.annotation.Caller;
 import com.protocol.annotation.Provider;

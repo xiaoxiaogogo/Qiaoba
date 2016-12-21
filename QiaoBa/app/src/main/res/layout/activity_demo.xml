@@ -2,19 +2,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
-
     <Button
-        android:id="@+id/show_test"
+        android:id="@+id/demo_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="show_test"
+        android:text="demo_btn"
         />
-
-    <Button
-        android:id="@+id/start_main_demo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="start_main_demo"
-        />
-
 </LinearLayout>
