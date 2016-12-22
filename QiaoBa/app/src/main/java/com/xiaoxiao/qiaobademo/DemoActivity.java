@@ -7,10 +7,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Toast;
 
+import com.protocol.annotation.RouterLinkUri;
+
 /**
  * Created by wangfei on 2016/12/21.
  */
-
+@RouterLinkUri("xl://main:8888/demo?key=sada")
 public class DemoActivity extends AppCompatActivity {
 
     @Override

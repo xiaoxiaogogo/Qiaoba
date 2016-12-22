@@ -8,6 +8,7 @@ import android.view.View;
 
 import com.gavin.secondmodule.caller.TestService;
 import com.gavin.secondmodule.router.IRouterUri;
+import com.protocol.annotation.RouterLinkUri;
 import com.protocol.annotation.RouterUri;
 import com.xiaoxiao.qiaoba.ProtocolInterpreter;
 import com.xiaoxiao.qiaoba.RouterInterpreter;
@@ -43,6 +44,13 @@ public class SecondDemoActivity extends AppCompatActivity {
             }
         });
 
+
+        findViewById(R.id.start_link_demo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RouterInterpreter.getInstance().openRouterUri("xl://main:8888/linkdemo?key=fuck&ddd=you");
+            }
+        });
     }
 
 

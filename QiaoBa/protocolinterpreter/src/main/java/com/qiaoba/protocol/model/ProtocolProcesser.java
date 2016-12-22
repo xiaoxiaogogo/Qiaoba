@@ -3,6 +3,7 @@ package com.qiaoba.protocol.model;
 import com.protocol.annotation.Caller;
 import com.protocol.annotation.Provider;
 import com.google.auto.service.AutoService;
+import com.protocol.annotation.RouterLinkUri;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -77,6 +78,14 @@ public class ProtocolProcesser extends AbstractProcessor {
             }
         }else {
             System.out.println("provider size is 0");
+        }
+
+        Map<String, ElementHolder> routerLinkUriMap = collectClassInfo(roundEnv, RouterLinkUri.class, ElementKind.CLASS);
+        if(routerLinkUriMap.keySet().size() > 0){
+            classCreator.generateRouterLinkCode(mElementUtils, mFiler, routerLinkUriMap.values());
+
+        }else {
+            System.out.println("router link uri activity's size is 0");
         }
 
         return true;
