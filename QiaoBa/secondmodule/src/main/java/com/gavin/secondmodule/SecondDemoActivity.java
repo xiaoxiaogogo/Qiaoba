@@ -1,15 +1,17 @@
 package com.gavin.secondmodule;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
+import com.gavin.secondmodule.caller.TestCallback;
 import com.gavin.secondmodule.caller.TestService;
 import com.gavin.secondmodule.router.IRouterUri;
-import com.protocol.annotation.RouterLinkUri;
-import com.protocol.annotation.RouterUri;
+import com.protocol.annotation.communication.CallbackParam;
 import com.xiaoxiao.qiaoba.ProtocolInterpreter;
 import com.xiaoxiao.qiaoba.RouterInterpreter;
 
@@ -29,7 +31,23 @@ public class SecondDemoActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 try {
-                    ProtocolInterpreter.getInstance().create(TestService.class).doService(SecondDemoActivity.this, "second activity show toast");
+                    ProtocolInterpreter.getInstance().create(TestService.class).doService(SecondDemoActivity.this,
+                            "second activity show toast", new TestCallback(){
+                        @Override
+                        public void showHello(final String msg) {
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(SecondDemoActivity.this, "say hello : " + msg + " in second activity", Toast.LENGTH_SHORT).show();
+                                }
+                            }, 3000);
+                        }
+
+                        @Override
+                        public int getNum() {
+                            return 99;
+                        }
+                    });
                 }catch (Exception e){
                     e.printStackTrace();
                     Log.e("mytest", e.toString());

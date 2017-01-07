@@ -1,9 +1,13 @@
 package com.xiaoxiao.qiaoba;
 
+import android.text.TextUtils;
+
+import com.protocol.annotation.communication.CallbackParam;
 import com.qiaoba.protocol.model.DataClassCreator;
 import com.xiaoxiao.qiaoba.factory.BeanFactory;
 import com.xiaoxiao.qiaoba.factory.DefaultBeanFactory;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -94,13 +98,52 @@ public class ProtocolInterpreter {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                Method realMethod = realClazz.getDeclaredMethod(method.getName(), method.getParameterTypes());
+                Class[] realClazzParamTypes = method.getParameterTypes();
+                Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+                for (int i =0 ; i< parameterAnnotations.length; i++){
+                    Annotation[] annos = parameterAnnotations[i];
+                    if(annos != null && annos.length > 0){
+                        if(annos[0] instanceof CallbackParam){
+                            CallbackParam callbackParamAnno = (CallbackParam) annos[0];
+                            String communicationCallbackClassName = DataClassCreator.getCommunicationCallbackClassName(callbackParamAnno.value());
+                            Class<?> communicationCallbackClazz = Class.forName(communicationCallbackClassName);
+                            realClazzParamTypes[i] = communicationCallbackClazz;
+                            //这里可以使用缓存，来提升性能
+                            Object callbackProxyInstant = createCallbackProxyInstant(communicationCallbackClazz, args[i]);
+                            args[i] = callbackProxyInstant;
+                        }
+                    }
+                }
+                Method realMethod = realClazz.getDeclaredMethod(method.getName(), realClazzParamTypes);
                 realMethod.setAccessible(true);
                 return realMethod.invoke(finalInstant, args);
             }
         };
         mInvocationHandlerMap.put(stubClazz, handler);
         return handler;
+    }
+
+    private Object createCallbackProxyInstant(Class<?> communicationCallbackClazz, final Object callbackImp) {
+        if(callbackImp == null){
+            return  null;
+        }
+        return Proxy.newProxyInstance(communicationCallbackClazz.getClassLoader(), new Class[]{communicationCallbackClazz}, new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                //保证方法名相同，并且参数相同才行
+                Class[] argClazzs = new Class[args == null ? 0 :args.length];
+                if(args != null) {
+                    for (int i = 0; i < args.length; i++) {
+                        argClazzs[i] = args[i].getClass();
+                    }
+                }
+                Method callbackImpMethod = callbackImp.getClass().getMethod(method.getName(), argClazzs);
+                if(callbackImpMethod != null){
+                    return callbackImpMethod.invoke(callbackImp, args);
+                }
+                return null;
+            }
+        });
     }
 
     /**

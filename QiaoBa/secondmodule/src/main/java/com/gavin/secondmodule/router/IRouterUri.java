@@ -1,7 +1,7 @@
 package com.gavin.secondmodule.router;
 
-import com.protocol.annotation.RouterParam;
-import com.protocol.annotation.RouterUri;
+import com.protocol.annotation.router.RouterParam;
+import com.protocol.annotation.router.RouterUri;
 
 /**
  * Created by wangfei on 2016/12/21.

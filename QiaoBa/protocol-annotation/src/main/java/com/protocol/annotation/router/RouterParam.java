@@ -1,4 +1,4 @@
-package com.protocol.annotation;
+package com.protocol.annotation.router;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,12 +6,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by wangfei on 2016/12/22.
+ * Created by wangfei on 2016/12/21.
  */
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.SOURCE)
-public @interface RouterLinkUri {
-
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface RouterParam {
     String value() default "";
 }

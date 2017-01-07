@@ -1,4 +1,4 @@
-package com.protocol.annotation;
+package com.protocol.annotation.communication;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,11 +6,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by wangfei on 2016/12/21.
+ * Created by wangfei on 17/1/7.
  */
 
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RouterParam {
-    String value() default "";
+public @interface CallbackParam {
+    String value();
 }

@@ -1,9 +1,10 @@
 package com.qiaoba.protocol.model;
 
-import com.protocol.annotation.Caller;
-import com.protocol.annotation.Provider;
+import com.protocol.annotation.communication.CallBack;
+import com.protocol.annotation.communication.Caller;
+import com.protocol.annotation.communication.Provider;
 import com.google.auto.service.AutoService;
-import com.protocol.annotation.RouterLinkUri;
+import com.protocol.annotation.router.RouterLinkUri;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -88,6 +89,15 @@ public class ProtocolProcesser extends AbstractProcessor {
             System.out.println("router link uri activity's size is 0");
         }
 
+        Map<String, ElementHolder> callbackMap = collectClassInfo(roundEnv, CallBack.class, ElementKind.INTERFACE);
+        if(callbackMap.size() > 0){
+            for(String key : callbackMap.keySet()){
+                classCreator.generateCallbackImpCode(mElementUtils, mFiler, callbackMap.get(key));
+            }
+        }else {
+            System.out.println("communication of mudules 's callback interface's size is 0");
+        }
+
         return true;
     }
 
@@ -98,7 +108,6 @@ public class ProtocolProcesser extends AbstractProcessor {
             if(element.getKind() != kind){
                 throw new IllegalArgumentException(element.getSimpleName() + "'s annotation must be on a " + kind.name());
             }
-
 
             try {
                 TypeElement typeElement = (TypeElement) element;

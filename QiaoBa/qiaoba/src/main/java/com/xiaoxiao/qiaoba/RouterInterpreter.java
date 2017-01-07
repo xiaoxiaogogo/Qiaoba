@@ -7,10 +7,9 @@ import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
-
-import com.protocol.annotation.RouterParam;
-import com.protocol.annotation.RouterUri;
 import com.qiaoba.protocol.model.DataClassCreator;
+import com.protocol.annotation.router.RouterParam;
+import com.protocol.annotation.router.RouterUri;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;

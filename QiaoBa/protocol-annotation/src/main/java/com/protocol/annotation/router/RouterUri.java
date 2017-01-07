@@ -1,4 +1,4 @@
-package com.protocol.annotation;
+package com.protocol.annotation.router;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
