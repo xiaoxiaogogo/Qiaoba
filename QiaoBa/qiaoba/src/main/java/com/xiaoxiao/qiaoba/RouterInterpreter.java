@@ -177,6 +177,12 @@ public class RouterInterpreter {
                 Object obj = routerLinkUtilClazz.newInstance();
                 if(fields != null && fields.length > 0){
                     for (Field field : fields){
+                        if(field.isSynthetic()){//过滤由于instant run功能新增的变量，（方法功能：是否是编译器生成代码）
+                            continue;
+                        }
+                        if("serialVersionUID".equals(field.getName())){//自动生成的变量，只有在序列化的时候才能使用到
+                            continue;
+                        }
                         String val = (String) field.get(obj);
                         int spitIndex = val.indexOf("|@|");
                         String uriStr = val.substring(0, spitIndex);
