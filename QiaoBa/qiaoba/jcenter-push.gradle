@@ -1,0 +1,87 @@
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.github.dcendents.android-maven'
+
+def siteUrl = 'https://github.com/xiaoxiaogogo/Qiaoba'
+def gitUrl = 'git@github.com:xiaoxiaogogo/Qiaoba.git'
+
+group = 'com.xiaoxiao.qiaoba'
+version = '1.0.1'
+
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                packaging 'aar'
+                name 'qiaoba for android'
+                url siteUrl
+
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'qiaoba'
+                        name 'wang.fei'
+                        email 'fei.wang.gavin@outlook.com'
+                    }
+                }
+
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+                }
+            }
+
+        }
+    }
+}
+
+task androidJavadocs(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+    classifier = 'javadoc'
+    from androidJavadocs.destinationDir
+}
+
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
+
+artifacts {
+    archives androidSourcesJar
+    archives androidJavadocsJar
+}
+
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+bintray {
+//    user = properties.getProperty("bintray.user")
+//    key = properties.getProperty("bintray.apikey")
+    user = 'qiaoba'
+    key = 'bf24da2ebbcf7176abb7380ece68f3009ea5c187'
+    configurations = ['archives']
+    pkg {
+        version {
+            name = '1.0.1'
+            desc = 'qiaoba 1.0.1'
+        }
+        repo = 'maven'
+        name = 'qiaoba'
+        licenses = ['Apache-2.0']
+        vcsUrl = gitUrl
+        publish = true
+    }
+}
+
+
