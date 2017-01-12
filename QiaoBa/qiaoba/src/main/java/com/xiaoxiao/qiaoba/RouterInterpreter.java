@@ -1,5 +1,6 @@
 package com.xiaoxiao.qiaoba;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -10,10 +11,12 @@ import android.util.Log;
 import com.qiaoba.protocol.model.DataClassCreator;
 import com.protocol.annotation.router.RouterParam;
 import com.protocol.annotation.router.RouterUri;
+import com.xiaoxiao.qiaoba.router.IActivityRouterInitalizer;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -33,7 +36,9 @@ public class RouterInterpreter {
     private Map<Class<?>, Object> mStubMap = new HashMap<>();
     private Map<Class<?>, InvocationHandler> mInvocationHandlerMap = new HashMap<>();
 
-    private static Map<String, String> mRouterLinkMap = new HashMap<>();
+//    private static Map<String, String> mRouterLinkMap = new HashMap<>();
+
+    private static Map<String, Class<? extends Activity>> mActivityRouterMap = new HashMap<>();
 
     public static void init(Context context){
         mContext = context;
@@ -140,26 +145,31 @@ public class RouterInterpreter {
             if(routerUri.contains("?")){
                 routerKey = routerKey.substring(0, routerKey.indexOf("?"));
             }
-            String activityClassName = mRouterLinkMap.get(routerKey);
-            if(!TextUtils.isEmpty(activityClassName)){
-                try {
-                    Class activityClazz = Class.forName(activityClassName);
-                    Intent intent = new Intent(mContext, activityClazz);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    Set<String> queryParameterNames = uri.getQueryParameterNames();
-                    if(queryParameterNames != null && queryParameterNames.size() > 0){
-                        for (String key : queryParameterNames){
-                            intent.putExtra(key, uri.getQueryParameter(key));
-                        }
+            Class activityClazz = mActivityRouterMap.get(routerKey);
+            if(activityClazz != null) {
+                Intent intent = new Intent(mContext, activityClazz);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                Set<String> queryParameterNames = uri.getQueryParameterNames();
+                if (queryParameterNames != null && queryParameterNames.size() > 0) {
+                    for (String key : queryParameterNames) {
+                        intent.putExtra(key, uri.getQueryParameter(key));
                     }
-                    mContext.startActivity(intent);
-                } catch (ClassNotFoundException e) {
-                    Log.e(TAG, "qiaoba create the activity class name is wrong!!");
-                    e.printStackTrace();
                 }
+                mContext.startActivity(intent);
             }else {
                 Log.e(TAG, "the router uri can't find it's Activity, please check the router uri!!");
             }
+//            if(!TextUtils.isEmpty(activityClassName)){
+//                try {
+//                    Class activityClazz = Class.forName(activityClassName);
+//
+//                } catch (ClassNotFoundException e) {
+//                    Log.e(TAG, "qiaoba create the activity class name is wrong!!");
+//                    e.printStackTrace();
+//                }
+//            }else {
+//                Log.e(TAG, "the router uri can't find it's Activity, please check the router uri!!");
+//            }
         }else {
             Log.e(TAG, "the router uri is not the right uri, please check your router uri!!");
         }
@@ -170,43 +180,68 @@ public class RouterInterpreter {
      * 加载router link 数据
      */
     private static void loadRouterlinkDatas() {
+//        try {
+//            Class routerLinkUtilClazz = Class.forName(DataClassCreator.getActvivityRouterInitalizerClassName());
+//            if(routerLinkUtilClazz != null){
+//                Field[] fields = routerLinkUtilClazz.getFields();
+//                Object obj = routerLinkUtilClazz.newInstance();
+//                if(fields != null && fields.length > 0){
+//                    for (Field field : fields){
+//                        if(field.isSynthetic()){//过滤由于instant run功能新增的变量，（方法功能：是否是编译器生成代码）
+//                            continue;
+//                        }
+//                        if("serialVersionUID".equals(field.getName())){//自动生成的变量，只有在序列化的时候才能使用到
+//                            continue;
+//                        }
+//                        String val = (String) field.get(obj);
+//                        int spitIndex = val.indexOf("|@|");
+//                        String uriStr = val.substring(0, spitIndex);
+//                        String className = val.substring(spitIndex+"|@|".length());
+//                        if(!isValidURI(uriStr)){
+//                            throw new RuntimeException("error!! " + uriStr + " in "+ className +" is not a valid uri");
+//                        }
+//                        if(uriStr.contains("?")){
+//                            uriStr = uriStr.substring(0, uriStr.indexOf("?"));
+//                        }
+//                        mRouterLinkMap.put(uriStr, className);
+//                    }
+//                }else {
+//                    Log.e(TAG, "error!! routerLinkUitls is not null, but it's field is 0!!");
+//                }
+//            }else {
+//                Log.e(TAG, "router link activity's is 0");
+//            }
+//        } catch (ClassNotFoundException e) {
+//            Log.e(TAG, "router link activity's is 0");
+//            e.printStackTrace();
+//        } catch (InstantiationException e) {
+//            e.printStackTrace();
+//        } catch (IllegalAccessException e) {
+//            e.printStackTrace();
+//        }
+
         try {
-            Class routerLinkUtilClazz = Class.forName(DataClassCreator.getRouterLinkClassName());
+            Class routerLinkUtilClazz = Class.forName(DataClassCreator.getActvivityRouterInitalizerClassName());
             if(routerLinkUtilClazz != null){
-                Field[] fields = routerLinkUtilClazz.getFields();
-                Object obj = routerLinkUtilClazz.newInstance();
-                if(fields != null && fields.length > 0){
-                    for (Field field : fields){
-                        if(field.isSynthetic()){//过滤由于instant run功能新增的变量，（方法功能：是否是编译器生成代码）
-                            continue;
-                        }
-                        if("serialVersionUID".equals(field.getName())){//自动生成的变量，只有在序列化的时候才能使用到
-                            continue;
-                        }
-                        String val = (String) field.get(obj);
-                        int spitIndex = val.indexOf("|@|");
-                        String uriStr = val.substring(0, spitIndex);
-                        String className = val.substring(spitIndex+"|@|".length());
-                        if(!isValidURI(uriStr)){
-                            throw new RuntimeException("error!! " + uriStr + " in "+ className +" is not a valid uri");
-                        }
-                        if(uriStr.contains("?")){
-                            uriStr = uriStr.substring(0, uriStr.indexOf("?"));
-                        }
-                        mRouterLinkMap.put(uriStr, className);
-                    }
-                }else {
-                    Log.e(TAG, "error!! routerLinkUitls is not null, but it's field is 0!!");
+                IActivityRouterInitalizer activityRouterInitalizer = (IActivityRouterInitalizer) routerLinkUtilClazz.getConstructor().newInstance();
+                activityRouterInitalizer.initRouterTable(mActivityRouterMap);
+                if(mActivityRouterMap.size() <= 0){
+                    Log.e(TAG, "router link activity's is 0");
                 }
-            }else {
-                Log.e(TAG, "router link activity's is 0");
+
             }
         } catch (ClassNotFoundException e) {
             Log.e(TAG, "router link activity's is 0");
             e.printStackTrace();
-        } catch (InstantiationException e) {
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {//创建实例异常
             e.printStackTrace();
         } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }catch (ClassCastException e){//类型转化异常 （自动生成的类不是 对应的接口实现类）
             e.printStackTrace();
         }
 
