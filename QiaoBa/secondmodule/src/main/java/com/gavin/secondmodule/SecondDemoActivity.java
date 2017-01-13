@@ -8,12 +8,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import com.gavin.secondmodule.caller.Test2Service;
 import com.gavin.secondmodule.caller.TestCallback;
 import com.gavin.secondmodule.caller.TestService;
 import com.gavin.secondmodule.router.IRouterUri;
-import com.protocol.annotation.communication.CallbackParam;
-import com.xiaoxiao.qiaoba.ProtocolInterpreter;
-import com.xiaoxiao.qiaoba.RouterInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.ProtocolInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.RouterInterpreter;
 
 /**
  * Created by wangfei on 2016/12/20.
@@ -31,7 +31,7 @@ public class SecondDemoActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 try {
-                    ProtocolInterpreter.getInstance().create(TestService.class).doService(SecondDemoActivity.this,
+                    ProtocolInterpreter.getInstance().create(Test2Service.class).doService(SecondDemoActivity.this,
                             "second activity show toast", new TestCallback(){
                         @Override
                         public void showHello(final String msg) {

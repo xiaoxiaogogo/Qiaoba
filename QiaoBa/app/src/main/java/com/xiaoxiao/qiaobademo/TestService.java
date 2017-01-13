@@ -3,13 +3,12 @@ package com.xiaoxiao.qiaobademo;
 import android.content.Context;
 import android.widget.Toast;
 
-import com.protocol.annotation.communication.CallBack;
-import com.protocol.annotation.communication.Provider;
+import com.xiaoxiao.qiaoba.annotation.communication.Provider;
 
 /**
  * Created by wangfei on 16/12/6.
  */
-@Provider("test")
+@Provider({"test", "test2","test"})
 public class TestService {
 
     public void doService(Context context, String str, TestCallback callback){

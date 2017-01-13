@@ -7,7 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Toast;
 
-import com.protocol.annotation.router.RouterLinkUri;
+import com.xiaoxiao.qiaoba.annotation.router.RouterLinkUri;
 
 /**
  * Created by wangfei on 2016/12/21.

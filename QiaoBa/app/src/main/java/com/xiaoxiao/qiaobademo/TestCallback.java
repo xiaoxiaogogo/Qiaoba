@@ -1,6 +1,6 @@
 package com.xiaoxiao.qiaobademo;
 
-import com.protocol.annotation.communication.CallBack;
+import com.xiaoxiao.qiaoba.annotation.communication.CallBack;
 
 /**
  * Created by wangfei on 17/1/8.

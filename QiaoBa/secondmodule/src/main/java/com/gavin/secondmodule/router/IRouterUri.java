@@ -1,7 +1,7 @@
 package com.gavin.secondmodule.router;
 
-import com.protocol.annotation.router.RouterParam;
-import com.protocol.annotation.router.RouterUri;
+import com.xiaoxiao.qiaoba.annotation.router.RouterParam;
+import com.xiaoxiao.qiaoba.annotation.router.RouterUri;
 
 /**
  * Created by wangfei on 2016/12/21.

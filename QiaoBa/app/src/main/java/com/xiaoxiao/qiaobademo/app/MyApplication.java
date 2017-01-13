@@ -2,7 +2,7 @@ package com.xiaoxiao.qiaobademo.app;
 
 import android.app.Application;
 
-import com.xiaoxiao.qiaoba.RouterInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.RouterInterpreter;
 
 /**
  * Created by wangfei on 2016/12/21.

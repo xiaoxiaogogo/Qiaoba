@@ -6,10 +6,10 @@ import com.xiaoxiao.qiaoba.annotation.communication.CallbackParam;
 import com.xiaoxiao.qiaoba.annotation.communication.Caller;
 
 /**
- * Created by wangfei on 2016/12/20.
+ * Created by wangfei on 2017/1/13.
  */
-@Caller("test")
-public interface TestService {
 
-    public void doService(Context context, String str,@CallbackParam("test") TestCallback callback);
+@Caller("test")
+public interface Test2Service {
+    void doService(Context context, String str, @CallbackParam("test") TestCallback callback);
 }
