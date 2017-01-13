@@ -34,4 +34,31 @@ dependencies {
     compile project(':protocolinterpreter')
 }
 
-apply from: './jcenter-push.gradle'
+ext {
+    bintrayRepo = 'qiaoba'
+    bintrayName = 'qiaoba'
+
+    publishedGroupId = 'com.xiaoxiao.qiaoba'
+    libraryName = 'qiaoba'
+    artifact = 'qiaoba'
+
+    libraryDescription = 'a component decoupling frame'
+
+    siteUrl = 'https://github.com/xiaoxiaogogo/Qiaoba'
+    gitUrl = 'https://github.com/xiaoxiaogogo/Qiaoba.git'
+
+    libraryVersion = '1.0.1'
+
+    developerId = 'qiaoba'
+    developerName = 'wang.fei'
+    developerEmail = 'fei.wang.gavin@outlook.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
+apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
+apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.gradle'
+
+//apply from: './jcenter-push.gradle'

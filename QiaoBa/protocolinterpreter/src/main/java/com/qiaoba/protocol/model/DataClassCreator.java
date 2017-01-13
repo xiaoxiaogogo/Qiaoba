@@ -1,5 +1,7 @@
 package com.qiaoba.protocol.model;
 
+import com.qiaoba.protocol.utils.Constant;
+import com.qiaoba.protocol.utils.Logger;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
@@ -26,21 +28,29 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
 
+import static com.qiaoba.protocol.utils.Constant.createRouterLinkPackageName;
+import static com.qiaoba.protocol.utils.Constant.createRouterLinkSimpleName;
+
 /**
  * Created by wangfei on 2016/12/7.
  */
 
 public class DataClassCreator {
 
-     private static final String createClassPackageName = "com.qiaoba.protocol.data";
-     private static final String createRouterLinkSimpleName = "ActivityRouterInitalizer";
-     private static final String createRouterLinkPackageName = "com.qiaoba.protocol.data.routerlink";
-     private static final String CREATE_CALLBACK_OF_COMMUNICATION_PACKAGE_NAME = "com.qiaoba.protocol.data.commucation.callback";
+
      private static final String ACTIVITY_CLASS_NAME = "android.app.Activity";
      private static final String ACTIVITY_ROUTER_INITALIZER_INTERFACE_CLASS_NAME = "com.xiaoxiao.qiaoba.router.IActivityRouterInitalizer";
 
+
+     private Logger mLogger;
+
+     public DataClassCreator(Logger logger){
+          mLogger = logger;
+     }
+
+
      public static String getClassNameForPackageName(String simpleName){
-          return createClassPackageName + "." + simpleName;
+          return Constant.createClassPackageName + "." + simpleName;
      }
 
      public static String getActvivityRouterInitalizerClassName(){
@@ -57,7 +67,7 @@ public class DataClassCreator {
                                .initializer("$S", elementHolder.getValueName())
                                .build()).build();
 
-               JavaFile javaFile = JavaFile.builder(createClassPackageName, callStub).build();
+               JavaFile javaFile = JavaFile.builder(Constant.createClassPackageName, callStub).build();
                try {
                     javaFile.writeTo(filer);
                } catch (IOException e) {
@@ -74,7 +84,7 @@ public class DataClassCreator {
                                .build())
                        .build();
 
-               JavaFile javaFile = JavaFile.builder(createClassPackageName, providerStub).build();
+               JavaFile javaFile = JavaFile.builder(Constant.createClassPackageName, providerStub).build();
                try {
                     javaFile.writeTo(filer);
                } catch (IOException e) {
@@ -102,18 +112,14 @@ public class DataClassCreator {
                     initRouterTableMethodBuilder.addStatement("routerMap.put($S, $T.class)", holder.getValueName(),
                             ClassName.get(holder.getTypeElement()));
 
-//                    routerLinkBuilder.addField(FieldSpec.builder(String.class, holder.getSimpleName())
-//                            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-//                            .initializer("$S+\"|@|\"+$S", holder.getValueName(), holder.getClazzName())
-//                            .build());
                }
-
                TypeSpec.Builder routerLinkBuilder = TypeSpec.classBuilder(createRouterLinkSimpleName)
                        .addSuperinterface(ClassName.get(activityRouterInterfaceElement))
                        .addModifiers(Modifier.PUBLIC)
                        .addMethod(initRouterTableMethodBuilder.build());
 
                JavaFile javaFile = JavaFile.builder(createRouterLinkPackageName, routerLinkBuilder.build()).build();
+
                try {
                     javaFile.writeTo(filer);
                } catch (IOException e) {
@@ -156,7 +162,7 @@ public class DataClassCreator {
 //               }
 //          }
 
-          JavaFile javaFile = JavaFile.builder(CREATE_CALLBACK_OF_COMMUNICATION_PACKAGE_NAME, callbackBuilder.build()).build();
+          JavaFile javaFile = JavaFile.builder(Constant.CREATE_CALLBACK_OF_COMMUNICATION_PACKAGE_NAME, callbackBuilder.build()).build();
           try {
                javaFile.writeTo(filer);
           } catch (IOException e) {
@@ -173,7 +179,7 @@ public class DataClassCreator {
      }
 
      public static String getCommunicationCallbackClassName(String simpleName) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException, InstantiationException {
-          Class stubClazz = Class.forName(CREATE_CALLBACK_OF_COMMUNICATION_PACKAGE_NAME + "." + simpleName);
+          Class stubClazz = Class.forName(Constant.CREATE_CALLBACK_OF_COMMUNICATION_PACKAGE_NAME + "." + simpleName);
           Field valueField = stubClazz.getDeclaredField("value");
           valueField.setAccessible(true);
           return (String) valueField.get(stubClazz.newInstance());
