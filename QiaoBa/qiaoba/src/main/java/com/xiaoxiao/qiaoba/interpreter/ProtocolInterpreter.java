@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import com.xiaoxiao.qiaoba.annotation.communication.CallbackParam;
 import com.xiaoxiao.qiaoba.annotation.communication.Caller;
 import com.xiaoxiao.qiaoba.interpreter.exception.AnnotationNotFoundException;
+import com.xiaoxiao.qiaoba.interpreter.exception.ProviderMethodNotFoundException;
 import com.xiaoxiao.qiaoba.protocol.exception.AnnotationValueNullException;
 import com.xiaoxiao.qiaoba.protocol.model.DataClassCreator;
 import com.xiaoxiao.qiaoba.interpreter.factory.BeanFactory;
@@ -105,7 +106,14 @@ public class ProtocolInterpreter {
             InvocationHandler handler = new InvocationHandler() {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                    Class[] realClazzParamTypes = method.getParameterTypes();
+                    Class[] callClazzParamTypes = method.getParameterTypes();
+                    Method realMethod = realClazz.getDeclaredMethod(method.getName(), callClazzParamTypes);
+                    if(realMethod == null){
+                        //方法名或者参数的类型错误
+                        throw new ProviderMethodNotFoundException("please check your method name and the parameters' type");
+                    }
+                    realMethod.setAccessible(true);
+                    //callback handle
                     Annotation[][] parameterAnnotations = method.getParameterAnnotations();
                     for (int i =0 ; i< parameterAnnotations.length; i++){
                         Annotation[] annos = parameterAnnotations[i];
@@ -114,15 +122,14 @@ public class ProtocolInterpreter {
                                 CallbackParam callbackParamAnno = (CallbackParam) annos[0];
                                 String communicationCallbackClassName = DataClassCreator.getCommunicationCallbackClassName(callbackParamAnno.value());
                                 Class<?> communicationCallbackClazz = Class.forName(communicationCallbackClassName);
-                                realClazzParamTypes[i] = communicationCallbackClazz;
+                                callClazzParamTypes[i] = communicationCallbackClazz;
                                 //这里可以使用缓存，来提升性能
                                 Object callbackProxyInstant = createCallbackProxyInstant(communicationCallbackClazz, args[i]);
                                 args[i] = callbackProxyInstant;
                             }
                         }
                     }
-                    Method realMethod = realClazz.getDeclaredMethod(method.getName(), realClazzParamTypes);
-                    realMethod.setAccessible(true);
+
                     return realMethod.invoke(finalInstant, args);
                 }
             };

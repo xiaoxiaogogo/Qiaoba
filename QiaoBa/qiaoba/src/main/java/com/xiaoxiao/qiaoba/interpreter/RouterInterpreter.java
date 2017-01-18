@@ -59,7 +59,7 @@ public class RouterInterpreter {
         }
 
         InvocationHandler handler = null;
-        handler = findHandler(routerClazz);
+        handler = findHandler(routerClazz, 0, null);
         if(handler == null){
             throw new RuntimeException("errpr!! router uri findHandler() is null!");
         }
@@ -68,7 +68,29 @@ public class RouterInterpreter {
         return (T) routerStub;
     }
 
-    private InvocationHandler findHandler(Class<?> routerClazz) {
+    /**
+     * startActvitiyForResult()
+     * @param routerClazz
+     * @param requestCode
+     * @param <T>
+     * @return
+     */
+    public <T> T create(Class<T> routerClazz, int requestCode, Context context){
+        if(mStubMap.get(routerClazz) != null){
+            return (T) mStubMap.get(routerClazz);
+        }
+
+        InvocationHandler handler = null;
+        handler = findHandler(routerClazz, requestCode, context);
+        if(handler == null){
+            throw new RuntimeException("error!! router uri findHandler() is null!");
+        }
+        Object routerStub = Proxy.newProxyInstance(routerClazz.getClassLoader(), new Class[]{routerClazz}, handler);
+        mStubMap.put(routerClazz, routerStub);
+        return (T) routerStub;
+    }
+
+    private InvocationHandler findHandler(Class<?> routerClazz, final int requestCode, final Context context) {
         if(mInvocationHandlerMap.get(routerClazz) != null){
             return mInvocationHandlerMap.get(routerClazz);
         }
@@ -113,7 +135,7 @@ public class RouterInterpreter {
                         }
                     }
 
-                    openRouterUri(sb.toString());
+                    openRouterUri(sb.toString(), requestCode, context instanceof Activity ? (Activity)context : null);
 
                 }
                 return null;
@@ -123,20 +145,30 @@ public class RouterInterpreter {
         return handler;
     }
 
-    public void openRouterUri(String routerUri) {
+
+    public void openRouterUri(String routerUri){
+        openRouterUri(routerUri, 0, null);
+    }
+
+
+    public void openRouterUri(String routerUri, int requestCode, Activity activity) {
         Uri uri = Uri.parse(routerUri);
         PackageManager packageManager = mContext.getPackageManager();
         Intent uriIntent = new Intent(Intent.ACTION_VIEW, uri);
         uriIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         List<ResolveInfo> activitys = packageManager.queryIntentActivities(uriIntent, 0);
         if(activitys.size() > 0){
-            mContext.startActivity(uriIntent);
+            if(requestCode > 0 && activity != null){
+                activity.startActivityForResult(uriIntent,requestCode);
+            }else {
+                mContext.startActivity(uriIntent);
+            }
         }else {
-            openFromRouterLinkUri(routerUri);
+            openFromRouterLinkUri(routerUri, requestCode, activity);
         }
     }
 
-    private void openFromRouterLinkUri(String routerUri) {
+    private void openFromRouterLinkUri(String routerUri, int requestCode, Activity activity) {
         Uri uri = Uri.parse(routerUri);
         if(uri != null){
             String routerKey = routerUri;
@@ -153,7 +185,11 @@ public class RouterInterpreter {
                         intent.putExtra(key, uri.getQueryParameter(key));
                     }
                 }
-                mContext.startActivity(intent);
+                if(requestCode > 0 && activity != null){
+                    activity.startActivityForResult(intent, requestCode);
+                }else {
+                    mContext.startActivity(intent);
+                }
             }else {
                 Log.e(TAG, "the router uri can't find it's Activity, please check the router uri!!");
             }

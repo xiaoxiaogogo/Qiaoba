@@ -12,9 +12,10 @@ buildscript {
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
 
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
-        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.0.0"
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+//        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
+//        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.0.0"
+//        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
+        classpath 'com.novoda:bintray-release:0.3.4'
     }
 }
 
@@ -27,3 +28,14 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+ext {
+    userOrg = 'qiaoba'
+    groupId = 'com.xiaoxiao.qiaoba'
+    uploadName = 'Qiaoba'
+    publishVersion = '1.0.1'
+    desc = 'a component decoupling frame'
+    website = 'https://github.com/xiaoxiaogogo/Qiaoba'
+    licences = ['Apache-2.0']
+}
+
