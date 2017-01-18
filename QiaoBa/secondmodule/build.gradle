@@ -29,7 +29,8 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.0.0'
     testCompile 'junit:junit:4.12'
 //    compile project(':protocol-annotation')
-//    compile project(':qiaoba')
+    compile project(':qiaoba')
 //    compile 'com.xiaoxiao.qiaoba:qiaoba:1.0.1'
 //    apt 'com.xiaoxiao.qiaoba:protocol-interpreter:1.0.1'
+//    compile project(path: ':protocol-annotation')
 }

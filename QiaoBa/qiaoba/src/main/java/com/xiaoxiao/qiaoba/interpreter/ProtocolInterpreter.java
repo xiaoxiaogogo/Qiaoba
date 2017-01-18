@@ -107,12 +107,6 @@ public class ProtocolInterpreter {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                     Class[] callClazzParamTypes = method.getParameterTypes();
-                    Method realMethod = realClazz.getDeclaredMethod(method.getName(), callClazzParamTypes);
-                    if(realMethod == null){
-                        //方法名或者参数的类型错误
-                        throw new ProviderMethodNotFoundException("please check your method name and the parameters' type");
-                    }
-                    realMethod.setAccessible(true);
                     //callback handle
                     Annotation[][] parameterAnnotations = method.getParameterAnnotations();
                     for (int i =0 ; i< parameterAnnotations.length; i++){
@@ -129,7 +123,12 @@ public class ProtocolInterpreter {
                             }
                         }
                     }
-
+                    Method realMethod = realClazz.getDeclaredMethod(method.getName(), callClazzParamTypes);
+                    if(realMethod == null){
+                        //方法名或者参数的类型错误
+                        throw new ProviderMethodNotFoundException("please check your method name and the parameters' type");
+                    }
+                    realMethod.setAccessible(true);
                     return realMethod.invoke(finalInstant, args);
                 }
             };
