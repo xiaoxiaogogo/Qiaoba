@@ -1,5 +1,6 @@
 package com.xiaoxiao.qiaobademo;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -29,4 +30,9 @@ public class RouterLinkDemoActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    public void onBackPressed() {
+        setResult(Activity.RESULT_OK);
+        super.onBackPressed();
+    }
 }

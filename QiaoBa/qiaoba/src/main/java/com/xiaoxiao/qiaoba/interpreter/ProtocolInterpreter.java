@@ -72,7 +72,7 @@ public class ProtocolInterpreter {
         Caller caller = stubClazz.getAnnotation(Caller.class);
         if(caller == null){
             //抛出异常， 没有此注解
-            throw new AnnotationNotFoundException(stubClazz.getCanonicalName() + " nedd the Caller annotation.");
+            throw new AnnotationNotFoundException(stubClazz.getCanonicalName() + " need the Caller annotation.");
         }
 
         if(!TextUtils.isEmpty(caller.value())){

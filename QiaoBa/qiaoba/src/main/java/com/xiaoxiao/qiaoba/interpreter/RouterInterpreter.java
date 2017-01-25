@@ -6,17 +6,26 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Bundle;
+import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.util.Log;
+
+import com.xiaoxiao.qiaoba.interpreter.exception.AnnotationNotFoundException;
+import com.xiaoxiao.qiaoba.interpreter.exception.RouterUriException;
+import com.xiaoxiao.qiaoba.interpreter.router.RouterCallback;
 import com.xiaoxiao.qiaoba.protocol.model.DataClassCreator;
 import com.xiaoxiao.qiaoba.annotation.router.RouterParam;
 import com.xiaoxiao.qiaoba.annotation.router.RouterUri;
 import com.xiaoxiao.qiaoba.interpreter.router.IActivityRouterInitalizer;
 
+import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +40,8 @@ public class RouterInterpreter {
 
     private static Context mContext;
 
-    private Map<Class<?>, Object> mStubMap = new HashMap<>();
-    private Map<Class<?>, InvocationHandler> mInvocationHandlerMap = new HashMap<>();
-
-//    private static Map<String, String> mRouterLinkMap = new HashMap<>();
+    private Map<String, Object> mStubMap = new HashMap<>();
+    private Map<String, InvocationHandler> mInvocationHandlerMap = new HashMap<>();
 
     private static Map<String, Class<? extends Activity>> mActivityRouterMap = new HashMap<>();
 
@@ -53,19 +60,12 @@ public class RouterInterpreter {
         return Holder.instance;
     }
 
-    public <T> T create(Class<T> routerClazz){
-        if(mStubMap.get(routerClazz) != null){
-            return (T) mStubMap.get(routerClazz);
-        }
+    public <T> T create(@NonNull Class<T> routerClazz){
+        return create(routerClazz, 0, null);
+    }
 
-        InvocationHandler handler = null;
-        handler = findHandler(routerClazz, 0, null);
-        if(handler == null){
-            throw new RuntimeException("errpr!! router uri findHandler() is null!");
-        }
-        Object routerStub = Proxy.newProxyInstance(routerClazz.getClassLoader(), new Class[]{routerClazz}, handler);
-        mStubMap.put(routerClazz, routerStub);
-        return (T) routerStub;
+    public <T> T create(@NonNull Class<T> routerClazz, int requestCode, Context context){
+        return create(routerClazz, requestCode, context, null);
     }
 
     /**
@@ -75,24 +75,33 @@ public class RouterInterpreter {
      * @param <T>
      * @return
      */
-    public <T> T create(Class<T> routerClazz, int requestCode, Context context){
-        if(mStubMap.get(routerClazz) != null){
-            return (T) mStubMap.get(routerClazz);
+    public <T> T create(@NonNull Class<T> routerClazz, int requestCode, Context context, RouterCallback callback){
+        if(routerClazz == null){
+            if(callback != null){
+                callback.onError(new NullPointerException("routerClazz can't be null!"));
+            }
+            return null;
+        }
+        if(mStubMap.get(requestCode >0 ?(routerClazz.getCanonicalName() + requestCode) : routerClazz.getCanonicalName()) != null){
+            return (T) mStubMap.get(requestCode >0 ?(routerClazz.getCanonicalName() + requestCode) : routerClazz.getCanonicalName());
         }
 
         InvocationHandler handler = null;
-        handler = findHandler(routerClazz, requestCode, context);
+        handler = findHandler(routerClazz, requestCode, context, callback);
         if(handler == null){
-            throw new RuntimeException("error!! router uri findHandler() is null!");
+            if(callback != null){
+                callback.onError(new AnnotationNotFoundException("please check whether you use the annotation RouterUri!"));
+            }
+            return null;
         }
         Object routerStub = Proxy.newProxyInstance(routerClazz.getClassLoader(), new Class[]{routerClazz}, handler);
-        mStubMap.put(routerClazz, routerStub);
+        mStubMap.put(requestCode >0 ? (routerClazz.getCanonicalName() + requestCode) : routerClazz.getCanonicalName(), routerStub);
         return (T) routerStub;
     }
 
-    private InvocationHandler findHandler(Class<?> routerClazz, final int requestCode, final Context context) {
-        if(mInvocationHandlerMap.get(routerClazz) != null){
-            return mInvocationHandlerMap.get(routerClazz);
+    private InvocationHandler findHandler(Class<?> routerClazz, final int requestCode, final Context context, final RouterCallback callback) {
+        if(mInvocationHandlerMap.get(requestCode >0 ?(routerClazz.getCanonicalName() + requestCode) : routerClazz.getCanonicalName()) != null){
+            return mInvocationHandlerMap.get(requestCode >0 ?(routerClazz.getCanonicalName() + requestCode) : routerClazz.getCanonicalName());
         }
         Method[] methods = routerClazz.getDeclaredMethods();
         int routerUriMethodNum = 0;
@@ -104,7 +113,10 @@ public class RouterInterpreter {
             }
         }
         if(routerUriMethodNum <=0){
-            throw new RuntimeException("error!! can't find method with annotation RouterUri!");
+            if(callback != null){
+                callback.onError(new AnnotationNotFoundException("error!! can't find method with annotation RouterUri!"));
+            }
+            return  null;
         }
         InvocationHandler handler = new InvocationHandler() {
             @Override
@@ -135,23 +147,26 @@ public class RouterInterpreter {
                         }
                     }
 
-                    openRouterUri(sb.toString(), requestCode, context instanceof Activity ? (Activity)context : null);
+                    openRouterUri(sb.toString(), requestCode, context instanceof Activity ? (Activity)context : null, callback);
 
                 }
                 return null;
             }
         };
-        mInvocationHandlerMap.put(routerClazz, handler);
+        mInvocationHandlerMap.put(requestCode >0 ?(routerClazz.getCanonicalName() + requestCode) : routerClazz.getCanonicalName(), handler);
         return handler;
     }
 
 
     public void openRouterUri(String routerUri){
-        openRouterUri(routerUri, 0, null);
+        openRouterUri(routerUri, 0, null, null);
     }
 
+    public void openRouterUri(String routerUri, RouterCallback callback){
+        openRouterUri(routerUri, 0, null, callback);
+    }
 
-    public void openRouterUri(String routerUri, int requestCode, Activity activity) {
+    public void openRouterUri(String routerUri, int requestCode, Activity activity, RouterCallback callback) {
         Uri uri = Uri.parse(routerUri);
         PackageManager packageManager = mContext.getPackageManager();
         Intent uriIntent = new Intent(Intent.ACTION_VIEW, uri);
@@ -164,48 +179,66 @@ public class RouterInterpreter {
                 mContext.startActivity(uriIntent);
             }
         }else {
-            openFromRouterLinkUri(routerUri, requestCode, activity);
+            openFromRouterLinkUri(build(routerUri).requestCode(requestCode, activity),callback);
         }
     }
 
-    private void openFromRouterLinkUri(String routerUri, int requestCode, Activity activity) {
-        Uri uri = Uri.parse(routerUri);
+    public void openRouterUri(Builder builder){
+        openFromRouterLinkUri(builder, null);
+    }
+
+    public void openRouterUri(Builder builder, RouterCallback callback){
+        openFromRouterLinkUri(builder, callback);
+    }
+
+    private void openFromRouterLinkUri(Builder builder, RouterCallback callback) {
+        if(builder == null){
+            if(callback != null){
+                callback.onError(new NullPointerException("Router Builder is null, please check."));
+            }
+            return;
+        }
+        Uri uri = Uri.parse(builder.mUri);
         if(uri != null){
-            String routerKey = routerUri;
-            if(routerUri.contains("?")){
+            String routerKey = builder.mUri;
+            if(builder.mUri.contains("?")){
                 routerKey = routerKey.substring(0, routerKey.indexOf("?"));
             }
             Class activityClazz = mActivityRouterMap.get(routerKey);
             if(activityClazz != null) {
                 Intent intent = new Intent(mContext, activityClazz);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                //因为NewTask 对startActivityForResult()有影响
+                if(builder.mRequsetCode > 0 && builder.mSourceActivity != null && builder.mFlags == Intent.FLAG_ACTIVITY_NEW_TASK){
+                    intent.setFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+                }else {
+                    intent.setFlags(builder.mFlags);
+                }
+                Bundle bundle = builder.mArgBundle == null ? new Bundle() : builder.mArgBundle;
                 Set<String> queryParameterNames = uri.getQueryParameterNames();
                 if (queryParameterNames != null && queryParameterNames.size() > 0) {
                     for (String key : queryParameterNames) {
-                        intent.putExtra(key, uri.getQueryParameter(key));
+                        bundle.putString(key, uri.getQueryParameter(key));
                     }
                 }
-                if(requestCode > 0 && activity != null){
-                    activity.startActivityForResult(intent, requestCode);
+                intent.putExtras(bundle);
+                if(builder.mRequsetCode > 0 && builder.mSourceActivity != null){
+                    builder.mSourceActivity.startActivityForResult(intent, builder.mRequsetCode);
                 }else {
                     mContext.startActivity(intent);
                 }
+                if(callback != null){
+                    callback.onSuccess();
+                }
             }else {
-                Log.e(TAG, "the router uri can't find it's Activity, please check the router uri!!");
+                if(callback != null){
+                    callback.onError(new RouterUriException("the router uri can't find it's Activity, please check the router uri!!"));
+                }
             }
-//            if(!TextUtils.isEmpty(activityClassName)){
-//                try {
-//                    Class activityClazz = Class.forName(activityClassName);
-//
-//                } catch (ClassNotFoundException e) {
-//                    Log.e(TAG, "qiaoba create the activity class name is wrong!!");
-//                    e.printStackTrace();
-//                }
-//            }else {
-//                Log.e(TAG, "the router uri can't find it's Activity, please check the router uri!!");
-//            }
+
         }else {
-            Log.e(TAG, "the router uri is not the right uri, please check your router uri!!");
+            if(callback != null){
+                callback.onError(new RouterUriException("the router uri is not a valid uri, please check your router uri!!"));
+            }
         }
     }
 
@@ -223,7 +256,6 @@ public class RouterInterpreter {
                 if(mActivityRouterMap.size() <= 0){
                     Log.e(TAG, "router link activity's is 0");
                 }
-
             }
         } catch (ClassNotFoundException e) {
             Log.e(TAG, "router link activity's is 0");
@@ -241,6 +273,237 @@ public class RouterInterpreter {
         }
 
     }
+
+
+    public Builder build(String uri){
+        return new Builder(uri);
+    }
+
+    public class Builder{
+        private String mUri;
+        private Bundle mArgBundle;
+        private int mFlags = Intent.FLAG_ACTIVITY_NEW_TASK;
+        private int mRequsetCode;
+        private Activity mSourceActivity;
+
+        public Builder(String uri){
+            mUri = uri;
+        }
+
+        public Builder with(Bundle bundle){
+            mArgBundle = bundle;
+            return this;
+        }
+
+        public Builder withString(String key, String val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putString(key, val);
+            return this;
+        }
+
+        public Builder withInt(String key, int val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putInt(key, val);
+            return this;
+        }
+
+        public Builder withBoolean(String key, boolean val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putBoolean(key, val);
+            return this;
+        }
+
+        public Builder withLong(String key, long val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putLong(key, val);
+            return this;
+        }
+
+        public Builder withShort(String key, short val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putShort(key, val);
+            return this;
+        }
+
+        public Builder withSerializable(String key, Serializable val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putSerializable(key, val);
+            return this;
+        }
+
+        public Builder withByte(String key, byte val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putByte(key, val);
+            return this;
+        }
+
+        public Builder withByteArray(String key, byte[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putByteArray(key, val);
+            return this;
+        }
+
+        public Builder withChar(String key, char val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putChar(key, val);
+            return this;
+        }
+
+        public Builder withCharArray(String key, char[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putCharArray(key, val);
+            return this;
+        }
+
+        public Builder withCharSequence(String key, CharSequence val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putCharSequence(key, val);
+            return this;
+        }
+
+        public Builder withCharSequenceArray(String key, CharSequence[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putCharSequenceArray(key, val);
+            return this;
+        }
+
+        public Builder withIntegerArrayList(String key, ArrayList<Integer> val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putIntegerArrayList(key, val);
+            return this;
+        }
+
+        public Builder withFloatArray(String key, float[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putFloatArray(key,val);
+            return this;
+        }
+
+        public Builder withShortArray(String key, short[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putShortArray(key, val);
+            return this;
+        }
+
+        public Builder withParcelable(String key, Parcelable val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putParcelable(key,val);
+            return this;
+        }
+
+        public Builder withParcelableArray(String key, Parcelable[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putParcelableArray(key, val);
+            return this;
+        }
+
+        public Builder withStringArrayList(String key, ArrayList<String> val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putStringArrayList(key, val);
+            return this;
+        }
+
+        public Builder withBooleanArray(String key, boolean[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putBooleanArray(key, val);
+            return this;
+        }
+
+        public Builder withFloat(String key, float val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putFloat(key, val);
+            return this;
+        }
+
+        public Builder withDouble(String key, double val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putDouble(key, val);
+            return this;
+        }
+
+        public Builder withDoubleArray(String key, double[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putDoubleArray(key, val);
+            return this;
+        }
+
+        public Builder withIntArray(String key, int[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putIntArray(key, val);
+            return this;
+        }
+
+        public Builder withLongArray(String key, long[] val){
+            if(mArgBundle == null){
+                mArgBundle = new Bundle();
+            }
+            mArgBundle.putLongArray(key, val);
+            return this;
+        }
+
+        public Builder addFlags(int flags){
+            mFlags = flags;
+            return this;
+        }
+
+        public Builder requestCode(int requestCode, Activity sourceActivity){
+            mRequsetCode = requestCode;
+            mSourceActivity = sourceActivity;
+            return this;
+        }
+
+        public void navigation(){
+            RouterInterpreter.getInstance().openRouterUri(this);
+        }
+
+    }
+
 
     private static boolean isValidURI(String uri) {
         if (uri == null || uri.indexOf(' ') >= 0 || uri.indexOf('\n') >= 0) {

@@ -30,7 +30,7 @@ task clean(type: Delete) {
 }
 
 ext {
-    userOrg = 'qiaoba'
+    userOrg = 'qiaobaorg'
     groupId = 'com.xiaoxiao.qiaoba'
     uploadName = 'Qiaoba'
     publishVersion = '1.0.1'

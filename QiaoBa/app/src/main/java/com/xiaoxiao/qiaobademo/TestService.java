@@ -10,10 +10,8 @@ import com.xiaoxiao.qiaoba.annotation.communication.Provider;
  */
 @Provider({"test", "test2","test"})
 public class TestService {
-
     public void doService(Context context, String str, TestCallback callback){
         Toast.makeText(context,"come from main module : "+ str + ";;; num from other mudule : " + callback.getNum(), Toast.LENGTH_SHORT).show();
         callback.showHello("hello");
     }
-
 }

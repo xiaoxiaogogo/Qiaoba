@@ -1,5 +1,7 @@
 package com.gavin.secondmodule;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -42,7 +44,6 @@ public class SecondDemoActivity extends AppCompatActivity {
                                 }
                             }, 3000);
                         }
-
                         @Override
                         public int getNum() {
                             return 99;
@@ -66,10 +67,24 @@ public class SecondDemoActivity extends AppCompatActivity {
         findViewById(R.id.start_link_demo).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                RouterInterpreter.getInstance().openRouterUri("xl://main:8888/linkdemo?key=fuck&ddd=you");
+//                RouterInterpreter.getInstance().openRouterUri("xl://main:8888/linkdemo?key=fuck&ddd=you");
+                RouterInterpreter.getInstance()
+                        .build("xl://main:8888/linkdemo")
+                        .withString("key","fuck")
+                        .withString("ddd","you")
+//                        .addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+                        .requestCode(12, SecondDemoActivity.this)
+                        .navigation();
             }
         });
     }
 
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == 12 && resultCode == Activity.RESULT_OK){
+            Toast.makeText(this, "return from last page", Toast.LENGTH_SHORT).show();
+        }
+    }
 }
