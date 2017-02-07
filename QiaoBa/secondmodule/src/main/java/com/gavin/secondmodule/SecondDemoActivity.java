@@ -16,6 +16,7 @@ import com.gavin.secondmodule.caller.TestService;
 import com.gavin.secondmodule.router.IRouterUri;
 import com.xiaoxiao.qiaoba.interpreter.ProtocolInterpreter;
 import com.xiaoxiao.qiaoba.interpreter.RouterInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.router.RouterCallback;
 
 /**
  * Created by wangfei on 2016/12/20.
@@ -74,6 +75,17 @@ public class SecondDemoActivity extends AppCompatActivity {
                         .withString("ddd","you")
 //                        .addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
                         .requestCode(12, SecondDemoActivity.this)
+                        .callback(new RouterCallback() {
+                            @Override
+                            public void onSuccess() {
+                                Toast.makeText(SecondDemoActivity.this, "Router to other page success.", Toast.LENGTH_SHORT).show();
+                            }
+
+                            @Override
+                            public void onError(Throwable error) {
+
+                            }
+                        })
                         .navigation();
             }
         });

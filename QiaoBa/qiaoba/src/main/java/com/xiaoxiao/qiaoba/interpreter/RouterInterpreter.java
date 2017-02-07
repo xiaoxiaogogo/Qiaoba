@@ -285,6 +285,7 @@ public class RouterInterpreter {
         private int mFlags = Intent.FLAG_ACTIVITY_NEW_TASK;
         private int mRequsetCode;
         private Activity mSourceActivity;
+        private RouterCallback mCallback;
 
         public Builder(String uri){
             mUri = uri;
@@ -498,8 +499,13 @@ public class RouterInterpreter {
             return this;
         }
 
+        public Builder callback(RouterCallback callback){
+            mCallback = callback;
+            return this;
+        }
+
         public void navigation(){
-            RouterInterpreter.getInstance().openRouterUri(this);
+            RouterInterpreter.getInstance().openRouterUri(this, mCallback);
         }
 
     }
