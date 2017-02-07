@@ -8,4 +8,4 @@ compile 'com.xiaoxiao.qiaoba:qiaoba:1.0.2' //主要实现业务逻辑的模块
 apt 'com.xiaoxiao.qiaoba:protocol-interpreter:1.0.1'//apt编译期处理代码
 compile 'com.xiaoxiao.qiaoba:protocol-annotation:1.0.1'//apt使用的注解
 ```
-
+[接入详解地址](http://blog.csdn.net/u010014658/article/details/53791067),欢迎支持
