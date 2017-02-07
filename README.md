@@ -5,7 +5,7 @@
 ``` java
 //引入方式方式
 compile 'com.xiaoxiao.qiaoba:qiaoba:1.0.2' //主要实现业务逻辑的模块
-compile 'com.xiaoxiao.qiaoba:protocol-interpreter:1.0.1'//apt编译期处理代码
+apt 'com.xiaoxiao.qiaoba:protocol-interpreter:1.0.1'//apt编译期处理代码
 compile 'com.xiaoxiao.qiaoba:protocol-annotation:1.0.1'//apt使用的注解
 ```
 
