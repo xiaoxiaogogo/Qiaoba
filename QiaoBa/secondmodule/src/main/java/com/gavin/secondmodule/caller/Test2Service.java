@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.xiaoxiao.qiaoba.annotation.communication.CallbackParam;
 import com.xiaoxiao.qiaoba.annotation.communication.Caller;
+import com.xiaoxiao.qiaoba.annotation.communication.CommuApiMethod;
 
 /**
  * Created by wangfei on 2017/1/13.
@@ -11,5 +12,6 @@ import com.xiaoxiao.qiaoba.annotation.communication.Caller;
 
 @Caller("test")
 public interface Test2Service {
-    void doService(Context context, String str, @CallbackParam("test") TestCallback callback);
+    @CommuApiMethod
+    void doService(Context context, String str,  TestCallback callback);
 }

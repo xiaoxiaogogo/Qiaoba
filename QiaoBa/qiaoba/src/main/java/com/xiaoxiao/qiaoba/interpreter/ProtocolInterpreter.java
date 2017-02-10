@@ -1,6 +1,7 @@
 package com.xiaoxiao.qiaoba.interpreter;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.xiaoxiao.qiaoba.annotation.communication.CallbackParam;
 import com.xiaoxiao.qiaoba.annotation.communication.Caller;
@@ -13,6 +14,7 @@ import com.xiaoxiao.qiaoba.interpreter.factory.DefaultBeanFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -107,19 +109,16 @@ public class ProtocolInterpreter {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                     Class[] callClazzParamTypes = method.getParameterTypes();
-                    //callback handle
-                    Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-                    for (int i =0 ; i< parameterAnnotations.length; i++){
-                        Annotation[] annos = parameterAnnotations[i];
-                        if(annos != null && annos.length > 0){
-                            if(annos[0] instanceof CallbackParam){
-                                CallbackParam callbackParamAnno = (CallbackParam) annos[0];
-                                Class<?> communicationCallbackClazz = DataClassCreator.getCommunicationCallbackClassName(callbackParamAnno.value());
-                                callClazzParamTypes[i] = communicationCallbackClazz;
-                                //这里可以使用缓存，来提升性能
-                                Object callbackProxyInstant = createCallbackProxyInstant(communicationCallbackClazz, args[i]);
-                                args[i] = callbackProxyInstant;
-                            }
+                    
+                    for (int i=0; i < callClazzParamTypes.length; i++){
+                        if(isClassWithAnnotation(callClazzParamTypes[i], CallbackParam.class)){
+                            String callbackValue = getClassAnnotationValue(callClazzParamTypes[i], CallbackParam.class);
+                            Class<?> communicationCallbackClazz = DataClassCreator.getCommunicationCallbackClassName(callbackValue);
+                            callClazzParamTypes[i] = communicationCallbackClazz;
+                            //这里可以使用缓存，来提升性能
+                            Object callbackProxyInstant = createCallbackProxyInstant(communicationCallbackClazz, args[i]);
+                            args[i] = callbackProxyInstant;
+                            break;
                         }
                     }
                     Method realMethod = realClazz.getDeclaredMethod(method.getName(), callClazzParamTypes);
@@ -136,6 +135,42 @@ public class ProtocolInterpreter {
         }else {
             //抛出异常， Caller注解的值不能为空
             throw new AnnotationValueNullException(stubClazz.getCanonicalName() + "'s Caller annotation's value can't be null.");
+        }
+    }
+
+    private String getClassAnnotationValue(Class callClazz, Class annoClazz) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        if(callClazz.getAnnotation(annoClazz) != null){
+            Annotation anno = callClazz.getAnnotation(annoClazz);
+            Method value = annoClazz.getDeclaredMethod("value");
+            value.setAccessible(true);
+            return (String)value.invoke(anno);
+        }else {
+            for(Class c : callClazz.getInterfaces()){
+                String value = getClassAnnotationValue(c, annoClazz);
+                if(value != null){
+                    return value;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * 判断
+     * @param callClazz
+     * @param annoClazz
+     * @return
+     */
+    private boolean isClassWithAnnotation(Class callClazz, Class annoClazz) {
+        if(callClazz.isAnnotationPresent(annoClazz)){
+            return true;
+        }else {
+            for (Class c : callClazz.getInterfaces()){
+                if(isClassWithAnnotation(c, annoClazz)){
+                    return true;
+                }
+            }
+            return false;
         }
     }
 

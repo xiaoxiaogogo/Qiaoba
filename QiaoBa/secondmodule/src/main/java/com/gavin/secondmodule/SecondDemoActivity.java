@@ -18,6 +18,8 @@ import com.xiaoxiao.qiaoba.interpreter.ProtocolInterpreter;
 import com.xiaoxiao.qiaoba.interpreter.RouterInterpreter;
 import com.xiaoxiao.qiaoba.interpreter.router.RouterCallback;
 
+import java.lang.reflect.Method;
+
 /**
  * Created by wangfei on 2016/12/20.
  */
@@ -34,22 +36,28 @@ public class SecondDemoActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 try {
+//                    TestCallback callback = new TestCallback(){
+//                        @Override
+//                        public void showHello(final String msg) {
+//                            new Handler().postDelayed(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    Toast.makeText(SecondDemoActivity.this, "say hello : " + msg + " in second activity", Toast.LENGTH_SHORT).show();
+//                                }
+//                            }, 3000);
+//                        }
+//                        @Override
+//                        public int getNum() {
+//                            return 99;
+//                        }
+//                    };
+                    TestCallback callback = new TestCallbackDemo(SecondDemoActivity.this);
+
                     ProtocolInterpreter.getInstance().create(Test2Service.class).doService(SecondDemoActivity.this,
-                            "second activity show toast", new TestCallback(){
-                        @Override
-                        public void showHello(final String msg) {
-                            new Handler().postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Toast.makeText(SecondDemoActivity.this, "say hello : " + msg + " in second activity", Toast.LENGTH_SHORT).show();
-                                }
-                            }, 3000);
-                        }
-                        @Override
-                        public int getNum() {
-                            return 99;
-                        }
-                    });
+                            "second activity show toast", callback);
+
+//                    ProtocolInterpreter.getInstance().create(TestService.class).doService(SecondDemoActivity.this,
+//                            "second activity show toast");
                 }catch (Exception e){
                     e.printStackTrace();
                     Log.e("mytest", e.toString());

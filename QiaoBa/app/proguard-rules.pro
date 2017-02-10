@@ -91,4 +91,18 @@
 #如果使用json或xml解析，注意保留实体类
 -keep public class * implements java.io.Serializable { public *; }
 
+
+#Qiaoba框架混淆处理
 -keep class com.xiaoxiao.qiaoba.**{*;}
+-keep @com.xiaoxiao.qiaoba.annotation.communication.Provider class *{
+     @com.xiaoxiao.qiaoba.annotation.communication.CommuApiMethod <methods>;
+}
+-keep @com.xiaoxiao.qiaoba.annotation.communication.Caller class *{
+    @com.xiaoxiao.qiaoba.annotation.communication.CommuApiMethod <methods>;
+}
+-keep @com.xiaoxiao.qiaoba.annotation.communication.CallBack class *{
+    <methods>;
+}
+-keep @com.xiaoxiao.qiaoba.annotation.communication.CallbackParam class *{
+    <methods>;
+}

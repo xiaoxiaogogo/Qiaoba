@@ -6,11 +6,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by wangfei on 17/1/7.
+ * Created by wangfei on 2016/12/6.
  */
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface CallbackParam {
-    String value();
+/**
+ * 仅仅是为了防止其对应的方法不被混淆
+ */
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.CLASS)
+public @interface CommuApiMethod {
 }

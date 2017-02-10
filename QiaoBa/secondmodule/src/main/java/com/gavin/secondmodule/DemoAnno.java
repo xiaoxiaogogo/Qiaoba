@@ -1,16 +1,16 @@
-package com.xiaoxiao.qiaoba.annotation.communication;
+package com.gavin.secondmodule;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by wangfei on 17/1/7.
+ * Created by wangfei on 2017/2/13.
  */
-
-@Target(ElementType.TYPE)
+@Inherited
 @Retention(RetentionPolicy.RUNTIME)
-public @interface CallbackParam {
-    String value();
+@Target(ElementType.TYPE)
+public @interface DemoAnno {
 }
