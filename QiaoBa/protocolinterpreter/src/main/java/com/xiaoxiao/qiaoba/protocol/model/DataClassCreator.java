@@ -68,9 +68,9 @@ public class DataClassCreator {
           TypeSpec providerStub = TypeSpec.classBuilder(elementHolder.getValueName())
                   .addModifiers(Modifier.PUBLIC)
                   .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build())
-                  .addField(FieldSpec.builder(String.class, "value")
+                  .addField(FieldSpec.builder(Class.class, "value")
                           .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                          .initializer("$S", elementHolder.getClazzName())
+                          .initializer("$T.class", ClassName.get(elementHolder.getTypeElement()) )
                           .build())
                   .build();
 
@@ -131,9 +131,9 @@ public class DataClassCreator {
           TypeSpec.Builder callbackBuilder = TypeSpec.classBuilder(elementHolder.getValueName())
                   .addModifiers(Modifier.PUBLIC)
                   .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build())
-                  .addField(FieldSpec.builder(String.class, "value")
+                  .addField(FieldSpec.builder(Class.class, "value")
                           .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                          .initializer("$S", elementHolder.getClazzName())
+                          .initializer("$T.class", ClassName.get(elementHolder.getTypeElement()))
                           .build());
 
 //          List<? extends Element> enclosedElements = elementHolder.getTypeElement().getEnclosedElements();//获取子元素
@@ -160,16 +160,16 @@ public class DataClassCreator {
      }
 
 
-     public static String getValueFromClass(Class callerClazz) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
+     public static Class getValueFromClass(Class callerClazz) throws NoSuchFieldException, IllegalAccessException, InstantiationException {
           Field valueField = callerClazz.getDeclaredField("value");
           valueField.setAccessible(true);
-          return (String) valueField.get(callerClazz.newInstance());
+          return (Class) valueField.get(callerClazz.newInstance());
      }
 
-     public static String getCommunicationCallbackClassName(String simpleName) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException, InstantiationException {
+     public static Class getCommunicationCallbackClassName(String simpleName) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException, InstantiationException {
           Class stubClazz = Class.forName(Constant.CREATE_CALLBACK_OF_COMMUNICATION_PACKAGE_NAME + "." + simpleName);
           Field valueField = stubClazz.getDeclaredField("value");
           valueField.setAccessible(true);
-          return (String) valueField.get(stubClazz.newInstance());
+          return (Class) valueField.get(stubClazz.newInstance());
      }
 }

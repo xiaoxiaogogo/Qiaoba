@@ -29,5 +29,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.0.0'
     testCompile 'junit:junit:4.12'
     compile project(':qiaoba')
-//    compile 'com.xiaoxiao.qiaoba:qiaoba:1.0.1'
+//    compile 'com.xiaoxiao.qiaoba:qiaoba:1.0.2'
 }

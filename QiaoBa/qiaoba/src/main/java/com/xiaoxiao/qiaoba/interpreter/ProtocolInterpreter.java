@@ -78,13 +78,13 @@ public class ProtocolInterpreter {
         if(!TextUtils.isEmpty(caller.value())){
             Class providerStubClazz = Class.forName(DataClassCreator.getClassNameForPackageName(caller.value()));
 
-            String realClassName = DataClassCreator.getValueFromClass(providerStubClazz);
+            final Class realClazz = DataClassCreator.getValueFromClass(providerStubClazz);
 
-            if(realClassName == null || "".equals(realClassName) || "null".equals(realClassName)){
+            if(realClazz == null || "".equals(realClazz.getCanonicalName())){
                 throw new RuntimeException("error, the real class is null");
             }
 
-            final Class realClazz = Class.forName(realClassName);
+//            final Class realClazz = Class.forName(realClassName);
             Object realInstant = null;
             if(mBeanFactorys.size() > 0){
                 for (BeanFactory beanFactory : mBeanFactorys){
@@ -114,8 +114,7 @@ public class ProtocolInterpreter {
                         if(annos != null && annos.length > 0){
                             if(annos[0] instanceof CallbackParam){
                                 CallbackParam callbackParamAnno = (CallbackParam) annos[0];
-                                String communicationCallbackClassName = DataClassCreator.getCommunicationCallbackClassName(callbackParamAnno.value());
-                                Class<?> communicationCallbackClazz = Class.forName(communicationCallbackClassName);
+                                Class<?> communicationCallbackClazz = DataClassCreator.getCommunicationCallbackClassName(callbackParamAnno.value());
                                 callClazzParamTypes[i] = communicationCallbackClazz;
                                 //这里可以使用缓存，来提升性能
                                 Object callbackProxyInstant = createCallbackProxyInstant(communicationCallbackClazz, args[i]);
