@@ -14,10 +14,10 @@ compile 'com.xiaoxiao.qiaoba:protocol-annotation:1.0.3'//apt使用的注解
 //proguard配置
 -keep class com.xiaoxiao.qiaoba.**{*;}
 -keep @com.xiaoxiao.qiaoba.annotation.communication.Provider class *{
-     @com.xiaoxiao.qiaoba.annotation.communication.CommuApiMethod <methods>;
+     <methods>;
 }
 -keep @com.xiaoxiao.qiaoba.annotation.communication.Caller class *{
-    @com.xiaoxiao.qiaoba.annotation.communication.CommuApiMethod <methods>;
+    <methods>;
 }
 -keep @com.xiaoxiao.qiaoba.annotation.communication.CallBack class *{
     <methods>;
