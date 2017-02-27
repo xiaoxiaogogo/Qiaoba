@@ -1,13 +1,15 @@
 package com.xiaoxiao.qiaoba.interpreter;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xiaoxiao.qiaoba.annotation.communication.CallbackParam;
 import com.xiaoxiao.qiaoba.annotation.communication.Caller;
 import com.xiaoxiao.qiaoba.interpreter.exception.AnnotationNotFoundException;
 import com.xiaoxiao.qiaoba.interpreter.exception.ProviderMethodNotFoundException;
+import com.xiaoxiao.qiaoba.interpreter.exception.ProviderStubClassNotFoundException;
+import com.xiaoxiao.qiaoba.interpreter.protocol.ProtocolCallback;
 import com.xiaoxiao.qiaoba.protocol.exception.AnnotationValueNullException;
+import com.xiaoxiao.qiaoba.interpreter.exception.ProviderNotFoundException;
 import com.xiaoxiao.qiaoba.protocol.model.DataClassCreator;
 import com.xiaoxiao.qiaoba.interpreter.factory.BeanFactory;
 import com.xiaoxiao.qiaoba.interpreter.factory.DefaultBeanFactory;
@@ -36,6 +38,7 @@ public class ProtocolInterpreter {
 
     private boolean mIsEnableCheckMethod;
 
+    private ProtocolCallback mCallback;
 
     static class Holder{
         static ProtocolInterpreter instance = new ProtocolInterpreter();
@@ -52,64 +55,86 @@ public class ProtocolInterpreter {
     }
 
     public <T> T create(Class<T> stubClazz){
+        return create(stubClazz, null);
+    }
+
+
+    public <T> T create(Class<T> stubClazz, ProtocolCallback callback){
         if(mCallerBeanMap.get(stubClazz) != null){
             return (T) mCallerBeanMap.get(stubClazz);
         }
         InvocationHandler handler = null;
-        try {
-            handler = findHandler(stubClazz);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("error!! findHandler error!!");
+
+        handler = findHandler(stubClazz, callback);
+        if(handler == null){
+            return  null;
         }
         T result = (T) Proxy.newProxyInstance(stubClazz.getClassLoader(), new Class[]{stubClazz}, handler);
         mCallerBeanMap.put(stubClazz, result);
         return result;
     }
 
-    private <T> InvocationHandler findHandler(Class<T> stubClazz) throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException, InstantiationException {
+
+
+    private <T> InvocationHandler findHandler(Class<T> stubClazz, final ProtocolCallback callback) {
         if(mInvocationHandlerMap.get(stubClazz) != null){
             return mInvocationHandlerMap.get(stubClazz);
         }
         Caller caller = stubClazz.getAnnotation(Caller.class);
         if(caller == null){
             //抛出异常， 没有此注解
-            throw new AnnotationNotFoundException(stubClazz.getCanonicalName() + " need the Caller annotation.");
+            callback.onError(new AnnotationNotFoundException(stubClazz.getCanonicalName() + " need the Caller annotation."));
+            return null;
         }
 
         if(!TextUtils.isEmpty(caller.value())){
-            Class providerStubClazz = Class.forName(DataClassCreator.getClassNameForPackageName(caller.value()));
+            Class providerStubClazz = null;
+            try {
+                providerStubClazz = Class.forName(DataClassCreator.getClassNameForPackageName(caller.value()));
+            } catch (ClassNotFoundException e) {
+                callback.onError(new ProviderStubClassNotFoundException("provider stub class("+caller.value()+") not found！please check caller annotation's value is same as the provider annotation's value!"));
+            }
+            if(providerStubClazz == null){
+                return  null;
+            }
 
-            final Class realClazz = DataClassCreator.getValueFromClass(providerStubClazz);
+            Class realClazz = null;
+            try {
+                realClazz = DataClassCreator.getValueFromClass(providerStubClazz);
+            } catch (Exception e) {
+                callback.onError(new ProviderNotFoundException("provider real class can't be found! caller's annptation'value is " + caller.value()));
+            }
 
-            if(realClazz == null || "".equals(realClazz.getCanonicalName())){
-                throw new RuntimeException("error, the real class is null");
+            final  Class finalRealClazz = realClazz;
+
+            if(finalRealClazz == null || "".equals(finalRealClazz.getCanonicalName())){
+                return  null;
             }
 
 //            final Class realClazz = Class.forName(realClassName);
             Object realInstant = null;
             if(mBeanFactorys.size() > 0){
                 for (BeanFactory beanFactory : mBeanFactorys){
-                    realInstant = beanFactory.getBean(realClazz);
+                    realInstant = beanFactory.getBean(finalRealClazz);
                     if(realInstant != null){
                         break;
                     }
                 }
             }
             if(realInstant == null){
-                realInstant = createDefaultRealInstant(realClazz);//创建无参的实例（默认的方式）
+                realInstant = createDefaultRealInstant(finalRealClazz);//创建无参的实例（默认的方式）
             }
 
             if(realInstant == null){
-                throw new RuntimeException("error!! the target provider instant is null, no param construct don't have, please " +
-                        "provider your customer beanFactory");
+                callback.onError(new ProviderNotFoundException("create provider instant error!"));
+                return null;
             }
             final Object finalInstant = realInstant;
             InvocationHandler handler = new InvocationHandler() {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                     Class[] callClazzParamTypes = method.getParameterTypes();
-                    
+
                     for (int i=0; i < callClazzParamTypes.length; i++){
                         if(isClassWithAnnotation(callClazzParamTypes[i], CallbackParam.class)){
                             String callbackValue = getClassAnnotationValue(callClazzParamTypes[i], CallbackParam.class);
@@ -121,10 +146,11 @@ public class ProtocolInterpreter {
                             break;
                         }
                     }
-                    Method realMethod = realClazz.getDeclaredMethod(method.getName(), callClazzParamTypes);
+                    Method realMethod = finalRealClazz.getDeclaredMethod(method.getName(), callClazzParamTypes);
                     if(realMethod == null){
                         //方法名或者参数的类型错误
-                        throw new ProviderMethodNotFoundException("please check your method name and the parameters' type");
+                        callback.onError(new ProviderMethodNotFoundException("provider's method can't be found,please check your method name and the parameters' type"));
+                        return  null;
                     }
                     realMethod.setAccessible(true);
                     return realMethod.invoke(finalInstant, args);
@@ -134,7 +160,8 @@ public class ProtocolInterpreter {
             return handler;
         }else {
             //抛出异常， Caller注解的值不能为空
-            throw new AnnotationValueNullException(stubClazz.getCanonicalName() + "'s Caller annotation's value can't be null.");
+            callback.onError(new AnnotationValueNullException(stubClazz.getCanonicalName() + "'s Caller annotation's value can't be null."));
+            return null;
         }
     }
 
