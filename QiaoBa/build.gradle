@@ -34,7 +34,7 @@ ext {
     userOrg = 'qiaobaorg'
     groupId = 'com.xiaoxiao.qiaoba'
     uploadName = 'Qiaoba'
-    publishVersion = '1.0.3'
+    publishVersion = '1.0.5'
     desc = 'a component decoupling frame'
     website = 'https://github.com/xiaoxiaogogo/Qiaoba'
     licences = ['Apache-2.0']

@@ -16,6 +16,7 @@ import com.gavin.secondmodule.caller.TestService;
 import com.gavin.secondmodule.router.IRouterUri;
 import com.xiaoxiao.qiaoba.interpreter.ProtocolInterpreter;
 import com.xiaoxiao.qiaoba.interpreter.RouterInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.protocol.ProtocolCallback;
 import com.xiaoxiao.qiaoba.interpreter.router.RouterCallback;
 
 import java.lang.reflect.Method;
@@ -53,7 +54,12 @@ public class SecondDemoActivity extends AppCompatActivity {
 //                    };
                     TestCallback callback = new TestCallbackDemo(SecondDemoActivity.this);
 
-                    ProtocolInterpreter.getInstance().create(Test2Service.class).doService(SecondDemoActivity.this,
+                    ProtocolInterpreter.getInstance().create(Test2Service.class, new ProtocolCallback() {
+                        @Override
+                        public void onError(Throwable t) {
+                            Log.e("mytest", t.getMessage());
+                        }
+                    }).doService(SecondDemoActivity.this,
                             "second activity show toast", callback);
 
 //                    ProtocolInterpreter.getInstance().create(TestService.class).doService(SecondDemoActivity.this,

@@ -1,10 +1,12 @@
 package com.xiaoxiao.qiaoba.interpreter;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.xiaoxiao.qiaoba.annotation.communication.CallbackParam;
 import com.xiaoxiao.qiaoba.annotation.communication.Caller;
 import com.xiaoxiao.qiaoba.interpreter.exception.AnnotationNotFoundException;
+import com.xiaoxiao.qiaoba.interpreter.exception.CallerCallbackMethodNotMatch;
 import com.xiaoxiao.qiaoba.interpreter.exception.ProviderMethodNotFoundException;
 import com.xiaoxiao.qiaoba.interpreter.exception.ProviderStubClassNotFoundException;
 import com.xiaoxiao.qiaoba.interpreter.protocol.ProtocolCallback;
@@ -76,14 +78,16 @@ public class ProtocolInterpreter {
 
 
 
-    private <T> InvocationHandler findHandler(Class<T> stubClazz, final ProtocolCallback callback) {
+    private <T> InvocationHandler findHandler(final Class<T> stubClazz, final ProtocolCallback callback) {
         if(mInvocationHandlerMap.get(stubClazz) != null){
             return mInvocationHandlerMap.get(stubClazz);
         }
         Caller caller = stubClazz.getAnnotation(Caller.class);
         if(caller == null){
             //抛出异常， 没有此注解
-            callback.onError(new AnnotationNotFoundException(stubClazz.getCanonicalName() + " need the Caller annotation."));
+            if(callback != null) {
+                callback.onError(new AnnotationNotFoundException(stubClazz.getCanonicalName() + " need the Caller annotation."));
+            }
             return null;
         }
 
@@ -92,7 +96,9 @@ public class ProtocolInterpreter {
             try {
                 providerStubClazz = Class.forName(DataClassCreator.getClassNameForPackageName(caller.value()));
             } catch (ClassNotFoundException e) {
-                callback.onError(new ProviderStubClassNotFoundException("provider stub class("+caller.value()+") not found！please check caller annotation's value is same as the provider annotation's value!"));
+                if(callback != null) {
+                    callback.onError(new ProviderStubClassNotFoundException("provider stub class(" + caller.value() + ") not found！please check caller annotation's value is same as the provider annotation's value!"));
+                }
             }
             if(providerStubClazz == null){
                 return  null;
@@ -102,7 +108,9 @@ public class ProtocolInterpreter {
             try {
                 realClazz = DataClassCreator.getValueFromClass(providerStubClazz);
             } catch (Exception e) {
-                callback.onError(new ProviderNotFoundException("provider real class can't be found! caller's annptation'value is " + caller.value()));
+                if(callback != null) {
+                    callback.onError(new ProviderNotFoundException("provider real class can't be found! caller's annptation'value is " + caller.value()));
+                }
             }
 
             final  Class finalRealClazz = realClazz;
@@ -126,41 +134,57 @@ public class ProtocolInterpreter {
             }
 
             if(realInstant == null){
-                callback.onError(new ProviderNotFoundException("create provider instant error!"));
+                if(callback != null) {
+                    callback.onError(new ProviderNotFoundException("create provider instant error!"));
+                }
                 return null;
             }
             final Object finalInstant = realInstant;
             InvocationHandler handler = new InvocationHandler() {
                 @Override
-                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                    Class[] callClazzParamTypes = method.getParameterTypes();
-
-                    for (int i=0; i < callClazzParamTypes.length; i++){
-                        if(isClassWithAnnotation(callClazzParamTypes[i], CallbackParam.class)){
-                            String callbackValue = getClassAnnotationValue(callClazzParamTypes[i], CallbackParam.class);
-                            Class<?> communicationCallbackClazz = DataClassCreator.getCommunicationCallbackClassName(callbackValue);
-                            callClazzParamTypes[i] = communicationCallbackClazz;
-                            //这里可以使用缓存，来提升性能
-                            Object callbackProxyInstant = createCallbackProxyInstant(communicationCallbackClazz, args[i]);
-                            args[i] = callbackProxyInstant;
-                            break;
+                public Object invoke(Object proxy, Method method, Object[] args) {
+                    try {
+                        Class[] callClazzParamTypes = method.getParameterTypes();
+                        for (int i = 0; i < callClazzParamTypes.length; i++) {
+                            if (isClassWithAnnotation(callClazzParamTypes[i], CallbackParam.class)) {
+                                String callbackValue = getClassAnnotationValue(callClazzParamTypes[i], CallbackParam.class);
+                                Class<?> communicationCallbackClazz = DataClassCreator.getCommunicationCallbackClassName(callbackValue);
+                                //这里可以使用缓存，来提升性能
+                                Object callbackProxyInstant = createCallbackProxyInstant(communicationCallbackClazz, args[i], callClazzParamTypes[i], callback);
+                                callClazzParamTypes[i] = communicationCallbackClazz;
+                                args[i] = callbackProxyInstant;
+                                break;
+                            }
+                        }
+                        Method realMethod = finalRealClazz.getDeclaredMethod(method.getName(), callClazzParamTypes);
+                        if (realMethod == null) {
+                            //方法名或者参数的类型错误
+                            if(callback != null) {
+                                callback.onError(new ProviderMethodNotFoundException("Please check your method name and the parameters' type!!\n" +
+                                    "caller's class is " + stubClazz + "\n" +
+                                    "method is " + method.toString()));
+                            }
+                        }else {
+                            realMethod.setAccessible(true);
+                            return realMethod.invoke(finalInstant, args);
+                        }
+                    }catch (Exception e){
+                        if(callback != null) {
+                            callback.onError(new ProviderMethodNotFoundException("Please check your method name and the parameters' type!!\n" +
+                                    "caller's class is " + stubClazz + "\n" +
+                                    "method is " + method.toString()));
                         }
                     }
-                    Method realMethod = finalRealClazz.getDeclaredMethod(method.getName(), callClazzParamTypes);
-                    if(realMethod == null){
-                        //方法名或者参数的类型错误
-                        callback.onError(new ProviderMethodNotFoundException("provider's method can't be found,please check your method name and the parameters' type"));
-                        return  null;
-                    }
-                    realMethod.setAccessible(true);
-                    return realMethod.invoke(finalInstant, args);
+                    return null;
                 }
             };
             mInvocationHandlerMap.put(stubClazz, handler);
             return handler;
         }else {
             //抛出异常， Caller注解的值不能为空
-            callback.onError(new AnnotationValueNullException(stubClazz.getCanonicalName() + "'s Caller annotation's value can't be null."));
+            if(callback != null) {
+                callback.onError(new AnnotationValueNullException(stubClazz.getCanonicalName() + "'s Caller annotation's value can't be null."));
+            }
             return null;
         }
     }
@@ -201,13 +225,13 @@ public class ProtocolInterpreter {
         }
     }
 
-    private Object createCallbackProxyInstant(Class<?> communicationCallbackClazz, final Object callbackImp) {
+    private Object createCallbackProxyInstant(Class<?> communicationCallbackClazz, final Object callbackImp, final Class callerCallBackClazz, final ProtocolCallback callback) {
         if(callbackImp == null){
             return  null;
         }
         return Proxy.newProxyInstance(communicationCallbackClazz.getClassLoader(), new Class[]{communicationCallbackClazz}, new InvocationHandler() {
             @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            public Object invoke(Object proxy, Method method, Object[] args) {
                 //保证方法名相同，并且参数相同才行
                 Class[] argClazzs = new Class[args == null ? 0 :args.length];
                 if(args != null) {
@@ -215,9 +239,21 @@ public class ProtocolInterpreter {
                         argClazzs[i] = args[i].getClass();
                     }
                 }
-                Method callbackImpMethod = callbackImp.getClass().getMethod(method.getName(), argClazzs);
-                if(callbackImpMethod != null){
-                    return callbackImpMethod.invoke(callbackImp, args);
+                try {
+                    Method callbackImpMethod = callbackImp.getClass().getMethod(method.getName(), argClazzs);
+                    if (callbackImpMethod != null) {
+                        return callbackImpMethod.invoke(callbackImp, args);
+                    }else {
+                        if(callback != null) {
+                            callback.onError(new CallerCallbackMethodNotMatch("Please check caller's callback's method name and arguments' type is right!!\n"
+                                    + "caller callback class is " + callerCallBackClazz ));
+                        }
+                    }
+                }catch (Exception e){
+                    if(callback != null) {
+                        callback.onError(new CallerCallbackMethodNotMatch("Please check caller's callback's method name and arguments' type is right!!\n"
+                                + "caller callback class is " + callerCallBackClazz ));
+                    }
                 }
                 return null;
             }
