@@ -24,7 +24,7 @@ public class DIAspect {
 
     }
 
-    @Around("pointcutOnDiField(dependInsert)")
+//    @Around("pointcutOnDiField(dependInsert)")
     public Object adviceOnDiField(ProceedingJoinPoint joinPoint, DependInsert dependInsert){
         Object obj = null;
         try {

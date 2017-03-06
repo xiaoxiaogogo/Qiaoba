@@ -2,6 +2,7 @@ package com.xiaoxiao.qiaobademo.app;
 
 import android.app.Application;
 
+import com.xiaoxiao.qiaoba.interpreter.Qiaoba;
 import com.xiaoxiao.qiaoba.interpreter.RouterInterpreter;
 
 /**
@@ -14,5 +15,6 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         RouterInterpreter.init(getApplicationContext());
+        Qiaoba.init(getApplicationContext());
     }
 }
