@@ -16,6 +16,9 @@ public class ExampleUnitTest {
     public void addition_isCorrect() throws Exception {
         Class.forName("com.xiaoxiao.qiaobademo.TestCallback");
         System.out.println(Demo.class);
+
+        String str = String.format("boolean 类型 : %b", false);
+        System.out.println(str);
         assertEquals(4, 2 + 2);
     }
 

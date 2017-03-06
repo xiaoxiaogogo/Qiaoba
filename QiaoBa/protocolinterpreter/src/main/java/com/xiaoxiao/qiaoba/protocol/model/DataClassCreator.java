@@ -1,5 +1,8 @@
 package com.xiaoxiao.qiaoba.protocol.model;
 
+import com.xiaoxiao.qiaoba.annotation.model.DependencyInfo;
+import com.xiaoxiao.qiaoba.protocol.exception.ModuleNameNullException;
+import com.xiaoxiao.qiaoba.protocol.factory.DenpendencyFactory;
 import com.xiaoxiao.qiaoba.protocol.utils.Constant;
 import com.xiaoxiao.qiaoba.protocol.utils.Logger;
 import com.squareup.javapoet.ClassName;
@@ -10,10 +13,10 @@ import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.WildcardTypeName;
+import com.xiaoxiao.qiaoba.protocol.utils.StringUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 
@@ -49,23 +52,7 @@ public class DataClassCreator {
      }
 
      public void generateProviderCode(Elements elementUtils, Filer filer, ElementHolder elementHolder){
-//          if(isCaller) {
-//               TypeSpec callStub = TypeSpec.classBuilder(elementHolder.getSimpleName())
-//                       .addModifiers(Modifier.PUBLIC)
-//                       .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build())
-//                       .addField(FieldSpec.builder(String.class, "value")
-//                               .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-//                               .initializer("$S", elementHolder.getValueName())
-//                               .build()).build();
-//
-//               JavaFile javaFile = JavaFile.builder(Constant.createClassPackageName, callStub).build();
-//               try {
-//                    javaFile.writeTo(filer);
-//               } catch (IOException e) {
-//                    System.out.println("caller : " + elementHolder.getSimpleName() + " class write to file fail");
-//                    e.printStackTrace();
-//               }
-//          }else {
+
           TypeSpec providerStub = TypeSpec.classBuilder(elementHolder.getValueName())
                   .addModifiers(Modifier.PUBLIC)
                   .addMethod(MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC).build())
@@ -82,7 +69,6 @@ public class DataClassCreator {
                mLogger.warning("provider : " + elementHolder.getValueName() + " class write to file fail");
                e.printStackTrace();
           }
-//          }
      }
 
      public void generateRouterLinkCode(Elements elementUtils, Filer filer, Collection<ElementHolder> elementHolders){
@@ -155,7 +141,38 @@ public class DataClassCreator {
           try {
                javaFile.writeTo(filer);
           } catch (IOException e) {
-               System.out.println("Callback imp class write to file fail!!");
+               mLogger.warning("Callback imp class write to file fail!!");
+               e.printStackTrace();
+          }
+     }
+
+     public void generateDenpendencyCode(Elements elements, Filer filer, Collection<DiElementHolder> elementHolders, String moduleName){
+          if(elementHolders == null && elementHolders.size() <= 0){
+               return;
+          }
+          if(StringUtils.isEmpty(moduleName)){
+               throw new ModuleNameNullException();
+          }
+
+          ParameterizedTypeName paramTypeName = ParameterizedTypeName.get(ClassName.get(Map.class),
+                  ClassName.get(String.class), ClassName.get(DependencyInfo.class));
+          MethodSpec.Builder loadMethodBuilder = MethodSpec.methodBuilder("loadDenpendency")
+                  .addModifiers(Modifier.PUBLIC)
+                  .addAnnotation(Override.class)
+                  .addParameter(ParameterSpec.builder(paramTypeName, "datas").build());
+          for (DiElementHolder elementHolder : elementHolders){
+               loadMethodBuilder.addStatement("datas.put($S,$T.build($S, $T.class, "+String.valueOf(elementHolder.isSingleInstance())+"))", elementHolder.getValueName(),ClassName.get(DependencyInfo.class),
+                       elementHolder.getValueName(), ClassName.get(elementHolder.getTypeElement()));
+          }
+          TypeSpec typeSpec = TypeSpec.classBuilder(Constant.DENPENDENCY_CLASS_NAME + Constant.CLASS_NAME_SEPARATE + moduleName)
+                  .addModifiers(Modifier.PUBLIC)
+                  .addSuperinterface(ClassName.get(DenpendencyFactory.class))
+                  .addMethod(loadMethodBuilder.build())
+                  .build();
+          JavaFile javaFile = JavaFile.builder(Constant.DENPENDENCY_PACKAGE_NAME, typeSpec).build();
+          try {
+               javaFile.writeTo(filer);
+          } catch (IOException e) {
                e.printStackTrace();
           }
      }
@@ -172,5 +189,13 @@ public class DataClassCreator {
           Field valueField = stubClazz.getDeclaredField("value");
           valueField.setAccessible(true);
           return (Class) valueField.get(stubClazz.newInstance());
+     }
+
+     public static String getCreateClassPackageName(){
+          return Constant.CREATE_CLASS_PACKAGE_NAME;
+     }
+
+     public static String getDependencyUtilsStartName(){
+          return Constant.DENPENDENCY_PACKAGE_NAME;
      }
 }

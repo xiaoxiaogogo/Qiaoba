@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.neenbedankt.android-apt'
+apply plugin: 'android-aspectjx'
 
 android {
     compileSdkVersion 23
@@ -62,4 +63,10 @@ dependencies {
     compile project(':secondmodule')
 //    compile 'com.xiaoxiao.qiaoba:protocol-annotation:1.0.1'
 
+}
+
+apt{
+    arguments {
+        moduleName project.getName();
+    }
 }

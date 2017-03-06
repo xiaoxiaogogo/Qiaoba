@@ -47,6 +47,8 @@ public class RouterInterpreter {
 
     public static void init(Context context){
         mContext = context;
+        DenpendencyDemo demo = new DenpendencyDemo();
+        demo.test();
         loadRouterlinkDatas();
     }
 

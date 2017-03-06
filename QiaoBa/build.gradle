@@ -16,6 +16,7 @@ buildscript {
 //        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.0.0"
 //        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.5'
         classpath 'com.novoda:bintray-release:0.3.4'
+        classpath 'com.hujiang.aspectjx:gradle-android-plugin-aspectjx:1.0.9'
     }
 }
 
