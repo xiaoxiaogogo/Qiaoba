@@ -3,7 +3,6 @@ package com.gavin.secondmodule;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -12,19 +11,16 @@ import android.widget.Toast;
 
 import com.gavin.secondmodule.caller.Test2Service;
 import com.gavin.secondmodule.caller.TestCallback;
-import com.gavin.secondmodule.caller.TestService;
 import com.gavin.secondmodule.router.IRouterUri;
-import com.xiaoxiao.qiaoba.interpreter.ProtocolInterpreter;
-import com.xiaoxiao.qiaoba.interpreter.RouterInterpreter;
-import com.xiaoxiao.qiaoba.interpreter.protocol.ProtocolCallback;
-import com.xiaoxiao.qiaoba.interpreter.router.RouterCallback;
-
-import java.lang.reflect.Method;
+import com.xiaoxiao.qiaoba.annotation.router.RouterLinkUri;
+import com.xiaoxiao.qiaoba.interpreter.Qiaoba;
+import com.xiaoxiao.qiaoba.interpreter.callback.ProtocolCallback;
+import com.xiaoxiao.qiaoba.interpreter.callback.RouterCallback;
 
 /**
  * Created by wangfei on 2016/12/20.
  */
-
+@RouterLinkUri("/second/demo")
 public class SecondDemoActivity extends AppCompatActivity {
 
     @Override
@@ -54,7 +50,7 @@ public class SecondDemoActivity extends AppCompatActivity {
 //                    };
                     TestCallback callback = new TestCallbackDemo(SecondDemoActivity.this);
 
-                    ProtocolInterpreter.getInstance().create(Test2Service.class, new ProtocolCallback() {
+                    Qiaoba.getInstance().getProtocolInterpreter().create(Test2Service.class, new ProtocolCallback() {
                         @Override
                         public void onError(Throwable t) {
                             Log.e("mytest", t.getMessage());
@@ -74,7 +70,7 @@ public class SecondDemoActivity extends AppCompatActivity {
         findViewById(R.id.start_main_demo).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                RouterInterpreter.getInstance().create(IRouterUri.class).jumpToDemo("second module data");
+                Qiaoba.getInstance().getRouterInterpreter().create(IRouterUri.class).jumpToDemo("second module data");
             }
         });
 
@@ -83,7 +79,7 @@ public class SecondDemoActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 //                RouterInterpreter.getInstance().openRouterUri("xl://main:8888/linkdemo?key=fuck&ddd=you");
-                RouterInterpreter.getInstance()
+                Qiaoba.getInstance().getRouterInterpreter()
                         .build("xl://main:8888/linkdemo")
                         .withString("key","fuck")
                         .withString("ddd","you")

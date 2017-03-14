@@ -6,11 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by wangfei on 2016/12/22.
+ * Created by wangfei on 2017/3/14.
  */
-
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
-public @interface RouterLinkUri {
+public @interface FragmentLinkUri {
     String value() default "";
 }

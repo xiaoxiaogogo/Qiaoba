@@ -36,11 +36,9 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.0.1'
     testCompile 'junit:junit:4.12'
 
-//    compile 'com.squareup:javapoet:1.7.0'
-//    compile 'com.google.auto.service:auto-service:1.0-rc2'
-    compile project(':protocolinterpreter')
-//    compile 'com.xiaoxiao.qiaoba:protocol-interpreter:1.0.1'
     compile 'org.aspectj:aspectjrt:1.8.9'
+    compile project(':protocolinterpreter')
+//    compile 'com.xiaoxiao.qiaoba:protocol-interpreter:1.0.4'
 
 }
 

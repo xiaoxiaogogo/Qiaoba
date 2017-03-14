@@ -1,4 +1,4 @@
-package com.xiaoxiao.qiaoba.interpreter;
+package com.xiaoxiao.qiaoba.interpreter.interpreter;
 
 import android.app.Activity;
 import android.content.Context;
@@ -9,20 +9,17 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
-import android.util.Log;
 
+import com.xiaoxiao.qiaoba.interpreter.Qiaoba;
 import com.xiaoxiao.qiaoba.interpreter.exception.AnnotationNotFoundException;
 import com.xiaoxiao.qiaoba.interpreter.exception.RouterUriException;
-import com.xiaoxiao.qiaoba.interpreter.router.RouterCallback;
-import com.xiaoxiao.qiaoba.protocol.model.DataClassCreator;
+import com.xiaoxiao.qiaoba.interpreter.callback.RouterCallback;
 import com.xiaoxiao.qiaoba.annotation.router.RouterParam;
 import com.xiaoxiao.qiaoba.annotation.router.RouterUri;
-import com.xiaoxiao.qiaoba.interpreter.router.IActivityRouterInitalizer;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -43,23 +40,10 @@ public class RouterInterpreter {
     private Map<String, Object> mStubMap = new HashMap<>();
     private Map<String, InvocationHandler> mInvocationHandlerMap = new HashMap<>();
 
-    private static Map<String, Class<? extends Activity>> mActivityRouterMap = new HashMap<>();
+    public static Map<String, Class<? extends Activity>> mActivityRouterMap = new HashMap<>();
 
     public static void init(Context context){
         mContext = context;
-        DenpendencyDemo demo = new DenpendencyDemo();
-        demo.test();
-        loadRouterlinkDatas();
-    }
-
-    private RouterInterpreter(){}
-
-    static class Holder{
-        public static RouterInterpreter instance = new RouterInterpreter();
-    }
-
-    public static RouterInterpreter getInstance(){
-        return Holder.instance;
     }
 
     public <T> T create(@NonNull Class<T> routerClazz){
@@ -243,39 +227,6 @@ public class RouterInterpreter {
             }
         }
     }
-
-
-    /**
-     * 加载router link 数据
-     */
-    private static void loadRouterlinkDatas() {
-
-        try {
-            Class routerLinkUtilClazz = Class.forName(DataClassCreator.getActvivityRouterInitalizerClassName());
-            if(routerLinkUtilClazz != null){
-                IActivityRouterInitalizer activityRouterInitalizer = (IActivityRouterInitalizer) routerLinkUtilClazz.getConstructor().newInstance();
-                activityRouterInitalizer.initRouterTable(mActivityRouterMap);
-                if(mActivityRouterMap.size() <= 0){
-                    Log.e(TAG, "router link activity's is 0");
-                }
-            }
-        } catch (ClassNotFoundException e) {
-            Log.e(TAG, "router link activity's is 0");
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {//创建实例异常
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        }catch (ClassCastException e){//类型转化异常 （自动生成的类不是 对应的接口实现类）
-            e.printStackTrace();
-        }
-
-    }
-
 
     public Builder build(String uri){
         return new Builder(uri);
@@ -507,7 +458,7 @@ public class RouterInterpreter {
         }
 
         public void navigation(){
-            RouterInterpreter.getInstance().openRouterUri(this, mCallback);
+            Qiaoba.getInstance().getRouterInterpreter().openRouterUri(this, mCallback);
         }
 
     }

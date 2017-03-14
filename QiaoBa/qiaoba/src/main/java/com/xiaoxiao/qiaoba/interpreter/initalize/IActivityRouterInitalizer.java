@@ -1,4 +1,4 @@
-package com.xiaoxiao.qiaoba.interpreter.router;
+package com.xiaoxiao.qiaoba.interpreter.initalize;
 
 import android.app.Activity;
 

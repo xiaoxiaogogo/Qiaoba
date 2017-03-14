@@ -1,15 +1,18 @@
 package com.xiaoxiao.qiaoba.interpreter;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 
 import com.xiaoxiao.qiaoba.interpreter.exception.HandlerException;
+import com.xiaoxiao.qiaoba.interpreter.initalize.FragmentLinkInitalizer;
 import com.xiaoxiao.qiaoba.interpreter.interpreter.DependencyInsertInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.interpreter.FragmentLinkInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.interpreter.ProtocolInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.interpreter.RouterInterpreter;
+import com.xiaoxiao.qiaoba.interpreter.initalize.IActivityRouterInitalizer;
 import com.xiaoxiao.qiaoba.interpreter.utils.ClassUtils;
-import com.xiaoxiao.qiaoba.protocol.factory.DenpendencyFactory;
+import com.xiaoxiao.qiaoba.interpreter.initalize.DenpendencyInitalizer;
 import com.xiaoxiao.qiaoba.protocol.model.DataClassCreator;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -18,9 +21,21 @@ import java.util.List;
 
 public class Qiaoba {
 
-    private static Qiaoba _instance;
+    private RouterInterpreter mRouterInterpreter;
+    private ProtocolInterpreter mProtocolInterpreter;
+    private FragmentLinkInterpreter mFragmentLinkInterpreter;
+    private DependencyInsertInterpreter mDIInterpreter;
+    private static boolean mIsInit = false;
 
-    private Qiaoba(){}
+
+    private Qiaoba(){
+        mRouterInterpreter = new RouterInterpreter();
+        mProtocolInterpreter =new ProtocolInterpreter();
+        mFragmentLinkInterpreter = new FragmentLinkInterpreter();
+        mDIInterpreter = new DependencyInsertInterpreter();
+    }
+
+    private static Qiaoba _instance;
 
     static class Holder{
         public static Qiaoba instance = new Qiaoba();
@@ -33,7 +48,21 @@ public class Qiaoba {
         return _instance;
     }
 
-    private static boolean mIsInit = false;
+    public RouterInterpreter getRouterInterpreter() {
+        return mRouterInterpreter;
+    }
+
+    public ProtocolInterpreter getProtocolInterpreter() {
+        return mProtocolInterpreter;
+    }
+
+    public FragmentLinkInterpreter getFragmentLinkInterpreter() {
+        return mFragmentLinkInterpreter;
+    }
+
+    public DependencyInsertInterpreter getDIInterpreter() {
+        return mDIInterpreter;
+    }
 
     public static void init(Context context){
         if(!mIsInit){
@@ -42,12 +71,17 @@ public class Qiaoba {
                 List<String> classNames = ClassUtils.getClassNameByPackageName(context, DataClassCreator.getCreateClassPackageName());
                 for (String className : classNames){
                     if(className.startsWith(DataClassCreator.getDependencyUtilsStartName())){
-                        ((DenpendencyFactory)(Class.forName(className).getConstructor().newInstance())).loadDenpendency(DependencyInsertInterpreter.dependencyInfoMap);
+                        ((DenpendencyInitalizer)(Class.forName(className).getConstructor().newInstance())).loadDenpendency(DependencyInsertInterpreter.dependencyInfoMap);
+                    }else if(className.startsWith(DataClassCreator.getFragmentLinkUtilsStartName())){
+                        ((FragmentLinkInitalizer)(Class.forName(className).getConstructor().newInstance())).loadFragmentLink(FragmentLinkInterpreter.FRAGMENT_LINK_MAP);
+                    }else if(className.startsWith(DataClassCreator.getRouterLinkUtilsStartName())){
+                        ((IActivityRouterInitalizer)(Class.forName(className).getConstructor().newInstance())).initRouterTable(RouterInterpreter.mActivityRouterMap);
                     }
                 }
             } catch (Exception e) {
                 throw new HandlerException("Qiaoba init center exception!["+e.getMessage()+"]");
             }
+            RouterInterpreter.init(context);
         }
         mIsInit = true;
     }

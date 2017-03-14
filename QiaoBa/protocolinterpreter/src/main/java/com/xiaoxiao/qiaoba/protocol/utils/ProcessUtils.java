@@ -1,6 +1,7 @@
 package com.xiaoxiao.qiaoba.protocol.utils;
 
 import com.xiaoxiao.qiaoba.annotation.communication.CallBack;
+import com.xiaoxiao.qiaoba.annotation.router.FragmentLinkUri;
 import com.xiaoxiao.qiaoba.protocol.exception.AnnotationTargetUseException;
 import com.xiaoxiao.qiaoba.protocol.exception.AnnotationValueNullException;
 import com.xiaoxiao.qiaoba.protocol.model.ElementHolder;
@@ -12,6 +13,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +21,7 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.TypeMirror;
 
 /**
  * Created by wangfei on 2017/1/11.
@@ -26,7 +29,8 @@ import javax.lang.model.element.TypeElement;
 
 public class ProcessUtils {
 
-    public static Map<String , ElementHolder> collectClassInfo(RoundEnvironment roundEnv, Class<? extends Annotation> clazz, ElementKind kind){
+    public static Map<String , ElementHolder> collectClassInfo(RoundEnvironment roundEnv, Class<? extends Annotation> clazz,
+                                                               ElementKind kind, Logger logger){
         Map<String, ElementHolder> map = new HashMap<>();
         Set<? extends Element> elements = roundEnv.getElementsAnnotatedWith(clazz);
         for (Element element : elements){
@@ -42,7 +46,7 @@ public class ProcessUtils {
                 Object value =  method.invoke(annotation);
                 String clazzName = typeElement.getQualifiedName().toString();
                 String simpleName = typeElement.getSimpleName().toString();
-                if( Caller.class.equals(clazz) || RouterLinkUri.class.equals(clazz) || CallBack.class.equals(clazz)) {
+                if( Caller.class.equals(clazz) || RouterLinkUri.class.equals(clazz) || CallBack.class.equals(clazz) || FragmentLinkUri.class.equals(clazz)) {
                     if (!(value instanceof String) || StringUtils.isEmpty((String)value)) {
                         throw new AnnotationValueNullException(element.getSimpleName() + "'s " + clazz.getSimpleName() + " annotation's value is null!!");
                     }
@@ -84,4 +88,6 @@ public class ProcessUtils {
         }
         return false;
     }
+
+
 }

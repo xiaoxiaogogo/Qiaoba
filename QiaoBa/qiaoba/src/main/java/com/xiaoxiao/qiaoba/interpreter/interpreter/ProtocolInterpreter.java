@@ -1,7 +1,6 @@
-package com.xiaoxiao.qiaoba.interpreter;
+package com.xiaoxiao.qiaoba.interpreter.interpreter;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.xiaoxiao.qiaoba.annotation.communication.CallbackParam;
 import com.xiaoxiao.qiaoba.annotation.communication.Caller;
@@ -9,7 +8,7 @@ import com.xiaoxiao.qiaoba.interpreter.exception.AnnotationNotFoundException;
 import com.xiaoxiao.qiaoba.interpreter.exception.CallerCallbackMethodNotMatch;
 import com.xiaoxiao.qiaoba.interpreter.exception.ProviderMethodNotFoundException;
 import com.xiaoxiao.qiaoba.interpreter.exception.ProviderStubClassNotFoundException;
-import com.xiaoxiao.qiaoba.interpreter.protocol.ProtocolCallback;
+import com.xiaoxiao.qiaoba.interpreter.callback.ProtocolCallback;
 import com.xiaoxiao.qiaoba.protocol.exception.AnnotationValueNullException;
 import com.xiaoxiao.qiaoba.interpreter.exception.ProviderNotFoundException;
 import com.xiaoxiao.qiaoba.protocol.model.DataClassCreator;
@@ -42,19 +41,12 @@ public class ProtocolInterpreter {
 
     private ProtocolCallback mCallback;
 
-    static class Holder{
-        static ProtocolInterpreter instance = new ProtocolInterpreter();
-    }
-
-    private ProtocolInterpreter(){
+    public ProtocolInterpreter(){
         mDefaultFactory = new DefaultBeanFactory();
         mBeanFactorys.add(mDefaultFactory);
 
     }
 
-    public static ProtocolInterpreter getInstance(){
-        return Holder.instance;
-    }
 
     public <T> T create(Class<T> stubClazz){
         return create(stubClazz, null);

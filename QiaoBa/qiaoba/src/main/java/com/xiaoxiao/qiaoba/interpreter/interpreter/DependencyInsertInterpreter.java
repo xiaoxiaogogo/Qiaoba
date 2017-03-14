@@ -18,20 +18,6 @@ public class DependencyInsertInterpreter {
 
     public static Map<String, DependencyInfo> dependencyInfoMap = new HashMap<>();
 
-    private static DependencyInsertInterpreter _instance;
-
-    private DependencyInsertInterpreter(){}
-
-    private static class Holder{
-        static DependencyInsertInterpreter instance = new DependencyInsertInterpreter();
-    }
-
-    public static DependencyInsertInterpreter getInstance(){
-        if(_instance == null){
-            _instance = Holder.instance;
-        }
-        return _instance;
-    }
 
     public void inject(Object obj){
         Field[] fields = obj.getClass().getDeclaredFields();

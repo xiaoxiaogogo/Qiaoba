@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.neenbedankt.android-apt'
 
 android {
     compileSdkVersion 23
@@ -30,4 +31,10 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile project(':qiaoba')
 //    compile 'com.xiaoxiao.qiaoba:qiaoba:1.0.2'
+}
+
+apt{
+    arguments {
+        moduleName project.getName();
+    }
 }

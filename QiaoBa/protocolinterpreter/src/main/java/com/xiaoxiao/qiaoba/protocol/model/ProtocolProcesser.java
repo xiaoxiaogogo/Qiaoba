@@ -67,10 +67,10 @@ public class ProtocolProcesser extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         // (下面需要进行判断 caller 和 provider的接口原形是否相同的校验，不同的话，需要在编译器爆出异常)
-        Map<String, ElementHolder> providerMap = ProcessUtils.collectClassInfo(roundEnv, Provider.class, ElementKind.CLASS);
+        Map<String, ElementHolder> providerMap = ProcessUtils.collectClassInfo(roundEnv, Provider.class, ElementKind.CLASS, mLogger);
 
         //create caller stub class(校验 caller 的value不能为null)
-        Map<String, ElementHolder> callerMap = ProcessUtils.collectClassInfo(roundEnv, Caller.class, ElementKind.INTERFACE);
+        Map<String, ElementHolder> callerMap = ProcessUtils.collectClassInfo(roundEnv, Caller.class, ElementKind.INTERFACE, mLogger);
 //
 //
         DataClassCreator classCreator = new DataClassCreator(mLogger);
@@ -92,7 +92,7 @@ public class ProtocolProcesser extends AbstractProcessor {
         }
 
 
-        Map<String, ElementHolder> callbackMap = ProcessUtils.collectClassInfo(roundEnv, CallBack.class, ElementKind.INTERFACE);
+        Map<String, ElementHolder> callbackMap = ProcessUtils.collectClassInfo(roundEnv, CallBack.class, ElementKind.INTERFACE, mLogger);
         if(callbackMap.size() > 0){
             for(String key : callbackMap.keySet()){
                 classCreator.generateCallbackImpCode(mElementUtils, mFiler, callbackMap.get(key));

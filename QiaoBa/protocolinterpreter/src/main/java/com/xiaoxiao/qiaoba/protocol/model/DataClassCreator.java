@@ -2,7 +2,6 @@ package com.xiaoxiao.qiaoba.protocol.model;
 
 import com.xiaoxiao.qiaoba.annotation.model.DependencyInfo;
 import com.xiaoxiao.qiaoba.protocol.exception.ModuleNameNullException;
-import com.xiaoxiao.qiaoba.protocol.factory.DenpendencyFactory;
 import com.xiaoxiao.qiaoba.protocol.utils.Constant;
 import com.xiaoxiao.qiaoba.protocol.utils.Logger;
 import com.squareup.javapoet.ClassName;
@@ -30,11 +29,6 @@ import javax.lang.model.util.Elements;
  */
 
 public class DataClassCreator {
-
-
-     private static final String ACTIVITY_CLASS_NAME = "android.app.Activity";
-     private static final String ACTIVITY_ROUTER_INITALIZER_INTERFACE_CLASS_NAME = "com.xiaoxiao.qiaoba.interpreter.router.IActivityRouterInitalizer";
-
 
      private Logger mLogger;
 
@@ -71,10 +65,10 @@ public class DataClassCreator {
           }
      }
 
-     public void generateRouterLinkCode(Elements elementUtils, Filer filer, Collection<ElementHolder> elementHolders){
+     public void generateRouterLinkCode(String moduleName, Elements elementUtils, Filer filer, Collection<ElementHolder> elementHolders){
           if(elementHolders.size() > 0){
-               TypeElement activityElement = elementUtils.getTypeElement(ACTIVITY_CLASS_NAME);
-               TypeElement activityRouterInterfaceElement = elementUtils.getTypeElement(ACTIVITY_ROUTER_INITALIZER_INTERFACE_CLASS_NAME);
+               TypeElement activityElement = elementUtils.getTypeElement(Constant.ACTIVITY_CLASS_NAME);
+               TypeElement activityRouterInterfaceElement = elementUtils.getTypeElement(Constant.ACTIVITY_ROUTER_INITALIZER_INTERFACE_CLASS_NAME);
 
                //参数类型为Map<String, Class<? extend Acvtivity>>
                ParameterizedTypeName mapTypeName = ParameterizedTypeName.get(ClassName.get(Map.class),
@@ -88,8 +82,9 @@ public class DataClassCreator {
                for(ElementHolder holder : elementHolders){
                     initRouterTableMethodBuilder.addStatement("routerMap.put($S, $T.class)", holder.getValueName(),
                             ClassName.get(holder.getTypeElement()));
+
                }
-               TypeSpec.Builder routerLinkBuilder = TypeSpec.classBuilder(Constant.createRouterLinkSimpleName)
+               TypeSpec.Builder routerLinkBuilder = TypeSpec.classBuilder(Constant.createRouterLinkSimpleName + Constant.CLASS_NAME_SEPARATE + moduleName)
                        .addSuperinterface(ClassName.get(activityRouterInterfaceElement))
                        .addModifiers(Modifier.PUBLIC)
                        .addMethod(initRouterTableMethodBuilder.build());
@@ -123,20 +118,6 @@ public class DataClassCreator {
                           .initializer("$T.class", ClassName.get(elementHolder.getTypeElement()))
                           .build());
 
-//          List<? extends Element> enclosedElements = elementHolder.getTypeElement().getEnclosedElements();//获取子元素
-//          for (Element element : enclosedElements) {
-//               if(element instanceof ExecutableElement) {
-//                    ExecutableElement executableElement = (ExecutableElement) element;
-//                    MethodSpec.Builder builder = MethodSpec.methodBuilder(executableElement.getSimpleName().toString())
-//                            .addModifiers(Modifier.PUBLIC)
-//                            .returns(ClassName.get(executableElement.getReturnType()));
-//                    for (VariableElement variableElement : executableElement.getParameters()) {
-//                         builder.addParameter(ClassName.get(variableElement.asType()), variableElement.getSimpleName().toString());
-//                    }
-//                    callbackBuilder.addMethod(builder.build());
-//               }
-//          }
-
           JavaFile javaFile = JavaFile.builder(Constant.CREATE_CALLBACK_OF_COMMUNICATION_PACKAGE_NAME, callbackBuilder.build()).build();
           try {
                javaFile.writeTo(filer);
@@ -166,7 +147,7 @@ public class DataClassCreator {
           }
           TypeSpec typeSpec = TypeSpec.classBuilder(Constant.DENPENDENCY_CLASS_NAME + Constant.CLASS_NAME_SEPARATE + moduleName)
                   .addModifiers(Modifier.PUBLIC)
-                  .addSuperinterface(ClassName.get(DenpendencyFactory.class))
+                  .addSuperinterface(ClassName.get(elements.getTypeElement(Constant.DENPENDENCY_INITALIZER_INTERFACE_CLASS_NAME)))
                   .addMethod(loadMethodBuilder.build())
                   .build();
           JavaFile javaFile = JavaFile.builder(Constant.DENPENDENCY_PACKAGE_NAME, typeSpec).build();
@@ -174,6 +155,36 @@ public class DataClassCreator {
                javaFile.writeTo(filer);
           } catch (IOException e) {
                e.printStackTrace();
+          }
+     }
+
+     public void generateFragmentLinkCode(String moduleName, Elements elementUtils, Filer filer, Collection<ElementHolder> holders) {
+          if(holders.size() > 0){
+               if(StringUtils.isEmpty(moduleName)){
+                    throw new ModuleNameNullException();
+               }
+               ParameterizedTypeName paramTypeName = ParameterizedTypeName.get(ClassName.get(Map.class),
+                       ClassName.get(String.class), ClassName.get(Class.class));
+               MethodSpec.Builder loadMethodBuilder = MethodSpec.methodBuilder("loadFragmentLink")
+                       .addModifiers(Modifier.PUBLIC)
+                       .addAnnotation(Override.class)
+                       .addParameter(ParameterSpec.builder(paramTypeName, "datas").build());
+               for(ElementHolder holder : holders){
+                    loadMethodBuilder.addStatement("datas.put($S,$T.class)", holder.getValueName(), ClassName.get(holder.getTypeElement()));
+               }
+               TypeSpec typeSpec = TypeSpec.classBuilder(Constant.FRAGMENT_LINK_CLASS_NAME + Constant.CLASS_NAME_SEPARATE + moduleName)
+                       .addModifiers(Modifier.PUBLIC)
+                       .addSuperinterface(ClassName.get(elementUtils.getTypeElement(Constant.FRAGMENT_ROUTER_INITALIZER_INTERFACE_CLASS_NAME)))
+                       .addMethod(loadMethodBuilder.build())
+                       .build();
+               JavaFile javaFile = JavaFile.builder(Constant.FRAGMENT_LINK_PACKAGE_NAME, typeSpec).build();
+               try {
+                    javaFile.writeTo(filer);
+               } catch (IOException e) {
+                    e.printStackTrace();
+               }
+          }else {
+
           }
      }
 
@@ -198,4 +209,13 @@ public class DataClassCreator {
      public static String getDependencyUtilsStartName(){
           return Constant.DENPENDENCY_PACKAGE_NAME;
      }
+
+     public static String getFragmentLinkUtilsStartName(){
+          return Constant.FRAGMENT_LINK_PACKAGE_NAME;
+     }
+
+     public static String getRouterLinkUtilsStartName(){
+          return Constant.createRouterLinkPackageName;
+     }
+
 }
