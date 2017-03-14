@@ -41,6 +41,7 @@ dependencies {
     compile project(':protocolinterpreter')
 //    compile 'com.xiaoxiao.qiaoba:protocol-interpreter:1.0.1'
     compile 'org.aspectj:aspectjrt:1.8.9'
+
 }
 
 publish {
@@ -48,8 +49,8 @@ publish {
     userOrg = rootProject.userOrg
     groupId = rootProject.groupId
     uploadName = rootProject.uploadName
-//    publishVersion = rootProject.publishVersion
-    publishVersion = '1.0.5'
+    publishVersion = rootProject.publishVersion
+//    publishVersion = '1.0.5'
     desc = rootProject.description
     website = rootProject.website
     licences = rootProject.licences
