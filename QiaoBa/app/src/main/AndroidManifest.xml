@@ -30,7 +30,11 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".RouterLinkDemoActivity" />
+        <activity android:name=".RouterLinkDemoActivity"
+            android:process=":second"
+            />
+
+        <service android:name=".app.MainLocalRouterService" />
     </application>
 
 </manifest>

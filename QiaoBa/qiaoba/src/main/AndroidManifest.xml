@@ -2,7 +2,7 @@
 
     <application android:allowBackup="true" android:label="@string/app_name"
         android:supportsRtl="true">
-
+        <service android:name=".interpreter.api.service.RemoteRouterService" android:process=":remote"></service>
     </application>
 
 </manifest>

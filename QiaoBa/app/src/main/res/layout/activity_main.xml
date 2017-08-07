@@ -16,11 +16,19 @@
         android:layout_height="wrap_content"
         android:text="show second activity" />
 
+    <Button
+        android:id="@+id/call_say_hi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="call sayhi"
+        android:layout_below="@id/show_second_activity"
+        />
+
     <FrameLayout
         android:id="@+id/fragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/show_second_activity"
+        android:layout_below="@id/call_say_hi"
         />
 
 </RelativeLayout>

@@ -6,6 +6,7 @@ import android.view.View;
 
 import com.xiaoxiao.qiaoba.annotation.di.DependInsert;
 import com.xiaoxiao.qiaoba.interpreter.Qiaoba;
+import com.xiaoxiao.qiaoba.interpreter.api.router.LocalRouter;
 import com.xiaoxiao.qiaoba.interpreter.interpreter.RouterInterpreter;
 import com.xiaoxiao.qiaoba.interpreter.interpreter.DependencyInsertInterpreter;
 import com.xiaoxiao.qiaoba.interpreter.interpreter.FragmentLinkInterpreter;
@@ -32,8 +33,8 @@ public class MainActivity extends AppCompatActivity {
 
                 Qiaoba.getInstance().getRouterInterpreter().build("/second/demo")
                         .navigation();
-
-                dependency.showHello(getApplicationContext());
+                // 依赖注入失败
+               // dependency.showHello(getApplicationContext());
             }
         });
 //        FragmentLinkInterpreter.Builder builder = new FragmentLinkInterpreter.Builder("/second/demo");
@@ -45,7 +46,15 @@ public class MainActivity extends AppCompatActivity {
 //            Toast.makeText(getApplicationContext(), "fragment is null", Toast.LENGTH_SHORT).show();
 //        }
 
-        Qiaoba.getInstance().getFragmentLinkInterpreter().build("/second/demo")
+        findViewById(R.id.call_say_hi).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                LocalRouter.getInstance().invokeRouter("second/demo/sayhi", null);
+            }
+        });
+
+
+        Qiaoba.getInstance().getFragmentLinkInterpreter().build("/second/demo/sayhi")
                 .withString("name", "xiaoming")
                 .parentActivity(this)
                 .resId(R.id.fragment)
