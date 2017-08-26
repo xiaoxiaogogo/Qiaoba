@@ -34,7 +34,7 @@ public class MyApplication extends QiaobaApplication {
 
     @Override
     public void initLocalRouterServices() {
-        RemoteRouter.getInstance().regisitLocalService("main", MainLocalRouterService.class);
+//        RemoteRouter.getInstance().regisitLocalService("main", MainLocalRouterService.class);
         RemoteRouter.getInstance().regisitLocalService("second", SecondLocalRouterService.class);
         Log.e("mytest", "init local router servie");
     }

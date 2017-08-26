@@ -137,9 +137,8 @@ public class LocalRouter {
     public void responseInvoke(String uuid){
         ActionRequest request = mActionRequestQueue.get(uuid);
         if(request == null){
-            // 可能取消， 或者出现异常；； 需要后面做处理
-
-            return;
+            // 可能取消， 或者出现异常；； 需要后面做处理 （一般情况下不应该出现）
+            throw new RuntimeException("ActionRequest not found in Local response invoke!!!");
         }
         if(mRemoteRouterAIDL != null){
             try {
