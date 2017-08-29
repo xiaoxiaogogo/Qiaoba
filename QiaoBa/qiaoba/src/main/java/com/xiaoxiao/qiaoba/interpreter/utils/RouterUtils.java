@@ -6,6 +6,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -71,7 +72,8 @@ public class RouterUtils {
         if(StringUtils.isNotEmpty(getPathnameFromRouter(router))){
             String[] routerSplits = router.split("/");
             if (routerSplits.length > 1){
-                return routerSplits[2];
+                String str = routerSplits[2];
+                return str.substring(0, str.indexOf("?") > 0 ? str.indexOf("?") : str.length());
             }
             return null;
         }
@@ -128,5 +130,43 @@ public class RouterUtils {
             }
         }
         return jsonObject.toString();
+    }
+
+    public static String mergeJson(String source, String target){
+        if(StringUtils.isEmpty(source)){
+            return target;
+        }else if(StringUtils.isEmpty(target)){
+            return source;
+        }
+        try {
+            JSONObject jsonSource = new JSONObject(source);
+            JSONObject jsonTarget = new JSONObject(target);
+            return deepMergeJson(jsonSource, jsonTarget).toString();
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return source;
+        }
+    }
+
+    private static JSONObject deepMergeJson(JSONObject source, JSONObject target){
+        Iterator<String> keys = source.keys();
+        while (keys.hasNext()){
+            try {
+                String key = keys.next();
+                if (!target.has(key)) {
+                    target.put(key, source.get(key));
+                } else {
+                    if (source.get(key) instanceof JSONObject && target.get(key) instanceof JSONObject) {
+                        JSONObject val = (JSONObject) source.get(key);
+                        deepMergeJson(val, (JSONObject) target.get(key));
+                    } else {
+                        target.put(key, source.get(key));
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return target;
     }
 }

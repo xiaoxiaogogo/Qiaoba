@@ -16,4 +16,6 @@ interface IRemoteRouterInterface {
     void responseCall(String uuid);
     // 用于接收 提供方进程的返回结果
     void responseData(String uuid, in ActionResult result);
+
+    boolean disconnectLocalService(String domain);
 }

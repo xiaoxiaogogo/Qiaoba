@@ -51,17 +51,22 @@ public class LocalRouterService extends Service {
         }
 
         @Override
-        public void resolveRouter(String uuid, String originDomain, String router, String jsonData) throws RemoteException {
+        public void resolveRouter(String uuid, String originDomain, String router, String jsonData, int callType) throws RemoteException {
             // 有两种方式， 直接通过此方法返回执行的结果； 但是这是一个同步的过程； 可能会有阻塞情况
             // 建立连接， 通过响应式的方式来响应，不会产生阻塞； （同互联网的方式）
 
             // 第一种： 直接返回
-            LocalRouter.getInstance().resolveRouter(uuid, originDomain, router, jsonData);
+            LocalRouter.getInstance().resolveRouter(uuid, originDomain, router, jsonData, callType);
 //            if(mRemoteRouterAIDL != null){
 //                mRemoteRouterAIDL.responseData(actionResult);
 //            }else {
 //                // 需要重新链接remote service
 //            }
+        }
+
+        @Override
+        public void disconnectRemote() throws RemoteException {
+            LocalRouter.getInstance().disconnectRemote();
         }
     }
 

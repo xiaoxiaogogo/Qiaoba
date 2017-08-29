@@ -14,6 +14,7 @@ import com.xiaoxiao.qiaoba.interpreter.api.application.QiaobaApplication;
 import com.xiaoxiao.qiaoba.interpreter.api.callback.ActionCallback;
 import com.xiaoxiao.qiaoba.interpreter.api.callback.ResponseCallback;
 import com.xiaoxiao.qiaoba.interpreter.api.provider.IProvider;
+import com.xiaoxiao.qiaoba.interpreter.api.service.LocalRouterService;
 import com.xiaoxiao.qiaoba.interpreter.api.service.RemoteRouterService;
 import com.xiaoxiao.qiaoba.interpreter.utils.ProcessUtils;
 import com.xiaoxiao.qiaoba.interpreter.utils.RouterUtils;
@@ -21,6 +22,11 @@ import com.xiaoxiao.qiaoba.protocol.utils.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static android.content.Context.BIND_AUTO_CREATE;
 
@@ -41,15 +47,22 @@ public class LocalRouter {
 
     private Map<String, ActionRequest> mActionRequestQueue;
     private Map<String, ResponseCallback> mResponseCallbackQueue;
-    private Map<String, ActionCallback> mActionCallbackQueue;
+
+    // 增加一个公用的线程池（所有的LocalRouter都公用的线程池）
+    private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors(); // 当前CPU的核数
+    private static final int CORE_THREAD_COUTN = CPU_COUNT + 1;
+    private static final int MAXIMUM_THREAD_COUNT = 2 * CPU_COUNT + 1;
+
+    private static Executor THREAD_POOL = new ThreadPoolExecutor(CORE_THREAD_COUTN, MAXIMUM_THREAD_COUNT,
+            1, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>(128));
+
 
     private LocalRouter(Context context){
         mContext = context;
         mDomain = ProcessUtils.getProcessName(context, ProcessUtils.getMyProcessId());
         mProviderList = new HashMap<>();
-        mActionRequestQueue = new HashMap<>();
-        mResponseCallbackQueue = new HashMap<>();
-        mActionCallbackQueue = new HashMap<>();
+        mActionRequestQueue = new ConcurrentHashMap<>();
+        mResponseCallbackQueue = new ConcurrentHashMap<>();
     }
 
     public String getDomain() {
@@ -114,9 +127,20 @@ public class LocalRouter {
      * @param router
      */
     public void invokeRouter(String router, ResponseCallback callback){
+        this.invokeRouter(router, "", callback);
+    }
+
+    public void invokeRouter(String router, String jsonData, ResponseCallback callback) {
+        this.invokeRouter(router, jsonData, ActionRequest.TYPE_CALL_NORMAL, callback);
+    }
+
+    public void invokeRouter(String router, String jsonData, int callType, ResponseCallback callback){
+        callType = callback == null ? ActionRequest.TYPE_CALL_NO_CALLBACK : callType;
         ActionRequest request = new ActionRequest.Builder()
                 .originDomain(mDomain)
                 .router(router)
+                .json(jsonData)
+                .callType(callType)
                 .build();
         mActionRequestQueue.put(request.getUuid(), request);
         if(callback != null) {
@@ -140,6 +164,7 @@ public class LocalRouter {
             // 可能取消， 或者出现异常；； 需要后面做处理 （一般情况下不应该出现）
             throw new RuntimeException("ActionRequest not found in Local response invoke!!!");
         }
+        mActionRequestQueue.remove(uuid);
         if(mRemoteRouterAIDL != null){
             try {
                 mRemoteRouterAIDL.callRouter(request);
@@ -174,24 +199,34 @@ public class LocalRouter {
         return true;
     }
 
-    public void responseData(ActionResult result){
-        if(result.getCode() == ActionResult.CODE_SUCCESS){
-            Log.e("mytest", "调用远程api success");
-        }else {
-            Log.e("mytest", "调用远程api faile, code : " + result.getCode());
-        }
+    public void responseData(final ActionResult result){
+        // 默认是在 Binder的线程中运行， 此处将其置于子线程中执行，不占用Binder的系统线程
+        THREAD_POOL.execute(new Runnable() {
+            @Override
+            public void run() {
+                if(mResponseCallbackQueue.get(result.getUUID()) != null) {
+                    if (result.getCode() == ActionResult.CODE_SUCCESS) {
+                        mResponseCallbackQueue.get(result.getUUID()).onSuccess(result);
+                    } else {
+                        mResponseCallbackQueue.get(result.getUUID()).onError(result);
+                    }
+                    mResponseCallbackQueue.remove(result.getUUID());
+                }
+            }
+        });
+
     }
 
 
     /*
      * 从本地查询router， 并执行
      */
-    public void resolveRouter(String uuid, String originDomain, String router, String jsonData){
-        resolveRouter(uuid, originDomain, jsonData, RouterUtils.getDomainFromRouter(router), RouterUtils.getPathnameFromRouter(router),
+    public void resolveRouter(String uuid, String originDomain, String router, String jsonData, int callType){
+        resolveRouter(uuid, originDomain, jsonData, callType, RouterUtils.getDomainFromRouter(router), RouterUtils.getPathnameFromRouter(router),
                 RouterUtils.getActionnameFromRouter(router));
     }
 
-    public void resolveRouter(final String uuid, String originDomain, String jsonData,
+    public void resolveRouter(final String uuid, String originDomain, final String jsonData, final int callType,
                               String domain, String pathname, String actionName){
         //判断是在当前进程还是在 其他进程
         if(this.mDomain.equals(originDomain)){ // 表明是在在当前进程中调用
@@ -209,29 +244,36 @@ public class LocalRouter {
                         .router(routerString)
                         .build();
             }else {
-                IAction action = provider.getAction(actionName);
+                final IAction action = provider.getAction(actionName);
                 if(action == null){
                     result = new ActionResult.Builder()
                             .code(ActionResult.CODE_ACTION_NOT_FOUND)
                             .uuid(uuid)
                             .router(routerString)
                             .build();
+                    responseRemoteData(result);
                 }else {
-                    ActionCallback callback = new ActionCallback() {
+                    THREAD_POOL.execute(new Runnable() {
                         @Override
-                        public void success(String data, String jsonData) {
+                        public void run() {
+                            String jsonStr = action.invoke(jsonData); // 其实这个值不应该由invoke直接返回， 如果需要向调用返回对应的返回值，需要做处理
                             ActionResult successResult = new ActionResult.Builder()
                                     .code(ActionResult.CODE_SUCCESS)
                                     .uuid(uuid)
-                                    .data(data)
-                                    .jsonData(jsonData)
+                                    .jsonData(jsonStr)
                                     .build();
 
                             responseRemoteData(successResult);
                         }
-                    };
+                    });
+                    if(callType == ActionRequest.TYPE_CALL_ONEWAY){
+                        ActionResult successResult = new ActionResult.Builder()
+                                .code(ActionResult.CODE_SUCCESS)
+                                .uuid(uuid)
+                                .build();
 
-                    action.invoke(jsonData,callback); // 其实这个值不应该由invoke直接返回， 如果需要向调用返回对应的返回值，需要做处理
+                        responseRemoteData(successResult);
+                    }
                 }
 
             }
@@ -248,6 +290,47 @@ public class LocalRouter {
         }else {
             // 和远程服务连接中断， 需要重新建立连接，然后返回对应的返回值
 
+        }
+    }
+
+    /**
+     * 断开和远程的连接
+     */
+    public void disconnectRemote() {
+        if(mRemoteServiceConnection == null){
+            return;
+        }
+        mContext.unbindService(mRemoteServiceConnection);
+        mRemoteRouterAIDL = null;
+    }
+
+    public void stopRemoteService(){
+        if(checkRemoteConnected()){
+            try {
+                mRemoteRouterAIDL.disconnectLocalService(RemoteRouter.PROCESS_NAME);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }else {
+            Log.e("QiaoBa", "The local router not connect remote service, so it can't stop remote service.");
+        }
+    }
+
+    public boolean checkRemoteConnected(){
+        if(mRemoteRouterAIDL != null){
+            return  true;
+        }
+        return false;
+    }
+
+    public boolean stopSelf(Class<? extends LocalRouterService> clazz){
+        if(checkRemoteConnected()){
+            try {
+                return mRemoteRouterAIDL.disconnectLocalService(mDomain);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
     }
 }

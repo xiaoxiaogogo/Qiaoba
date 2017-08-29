@@ -40,13 +40,12 @@ public abstract class QiaobaApplication extends Application {
         // 注意： 这个是每个进程都会执行到的
         mInstance = this;
 
-        mApplicationProxyMap.put("remote", RemoteApplicationProxy.class);
-
         // 初始化LocalRouter
         initRouter();
-        // 如果支持多进程， 启动RemoteRouterService
+        // 如果支持多进程， 启动RemoteRouterService, 并创建注册 RemoteApplicationProxy
         startRemoteService();
 
+        // 注意： 注册的操作每个进程都会执行，下面的dispatch操作会找到当前进程的ApplicatioProxy进行初始化
         // 注册Application的代理类
         initApplicationProxys();
 
@@ -83,11 +82,6 @@ public abstract class QiaobaApplication extends Application {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
-//        catch (NoSuchMethodException e) {
-//            e.printStackTrace();
-//        } catch (InvocationTargetException e) {
-//            e.printStackTrace();
-//        }
     }
 
 
@@ -98,6 +92,9 @@ public abstract class QiaobaApplication extends Application {
 
     private void startRemoteService(){
         String processName = ProcessUtils.getProcessName(this, ProcessUtils.getMyProcessId());
+        if(needMuliteProcess()){ // 只要只有在 RemoteApplicationProxy中才会注册此Proxy，然后执行
+            mApplicationProxyMap.put("remote", RemoteApplicationProxy.class);
+        }
         if(needMuliteProcess() && !"remote".equals(processName)){
             Intent intent = new Intent(getApplicationContext(), RemoteRouterService.class);
             startService(intent); // 开启远程服务，也是启动进程

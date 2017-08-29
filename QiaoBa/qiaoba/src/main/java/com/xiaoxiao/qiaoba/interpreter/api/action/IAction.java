@@ -10,5 +10,5 @@ import java.util.Map;
  */
 
 public interface IAction {
-    void invoke(String jsonData, ActionCallback callback);
+    String invoke(String jsonData);
 }

@@ -1,6 +1,7 @@
 package com.xiaoxiao.qiaobademo.app;
 
 import android.app.Application;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import com.gavin.secondmodule.api.ApiRouterFactory;
@@ -34,7 +35,7 @@ public class MyApplication extends QiaobaApplication {
 
     @Override
     public void initLocalRouterServices() {
-//        RemoteRouter.getInstance().regisitLocalService("main", MainLocalRouterService.class);
+        RemoteRouter.getInstance().regisitLocalService("main", MainLocalRouterService.class);
         RemoteRouter.getInstance().regisitLocalService("second", SecondLocalRouterService.class);
         Log.e("mytest", "init local router servie");
     }

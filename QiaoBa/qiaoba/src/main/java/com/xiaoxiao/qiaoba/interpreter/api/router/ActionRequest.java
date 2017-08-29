@@ -15,25 +15,31 @@ import java.util.Map;
 
 public class ActionRequest implements Parcelable{
 
+    public static final int TYPE_CALL_NORMAL = 0;
+    public static final int TYPE_CALL_ONEWAY = 1;
+    public static final int TYPE_CALL_NO_CALLBACK = 2;
+
     private String uuid;
     private String router;
     private String originDomain;
     private String jsonData;
+    private int callType;
     private Map<String, String> paramData = new HashMap<>();
 
     public ActionRequest(String router, String originDomain) {
-        this.uuid = UUIDUtils.generateUUID();
-        this.router = router;
-        this.originDomain = originDomain;
-        this.paramData.putAll(RouterUtils.parseQueryString(router));
-        this.jsonData = RouterUtils.generateJsonData(this.paramData);
+        this(router, originDomain, null, 0);
     }
 
-    public ActionRequest(String router, String originDomain, String jsonData, Map<String, String> paramData) {
+    public ActionRequest(String router, String originDomain, String jsonData, int callType) {
+        this(router, originDomain, jsonData, RouterUtils.parseQueryString(router), callType);
+    }
+
+    public ActionRequest(String router, String originDomain, String jsonData, Map<String, String> paramData, int callType) {
         this.router = router;
         this.originDomain = originDomain;
-        this.jsonData = jsonData;
-        this.paramData.putAll(paramData);
+        // 将get参数合并到json中， 因为这样才可以在进程间传递
+        this.jsonData = RouterUtils.mergeJson(jsonData, RouterUtils.generateJsonData(paramData));
+        this.callType = callType;
         this.uuid = UUIDUtils.generateUUID();
     }
 
@@ -42,6 +48,7 @@ public class ActionRequest implements Parcelable{
         router = in.readString();
         originDomain = in.readString();
         jsonData = in.readString();
+        callType = in.readInt();
     }
 
     public static final Creator<ActionRequest> CREATOR = new Creator<ActionRequest>() {
@@ -72,6 +79,10 @@ public class ActionRequest implements Parcelable{
         return jsonData;
     }
 
+    public int getCallType() {
+        return callType;
+    }
+
     public Map<String, String> getParamData() {
         return paramData;
     }
@@ -87,11 +98,14 @@ public class ActionRequest implements Parcelable{
         dest.writeString(router);
         dest.writeString(originDomain);
         dest.writeString(jsonData);
+        dest.writeInt(callType);
     }
 
     public static class Builder{
         private String originDomain;
         private String router;
+        private String jsonData;
+        private int callType;
         public Builder originDomain(String originDomain){
             this.originDomain = originDomain;
             return this;
@@ -100,8 +114,16 @@ public class ActionRequest implements Parcelable{
             this.router = router;
             return this;
         }
+        public Builder json(String jsonStr){
+            this.jsonData = jsonStr;
+            return this;
+        }
+        public Builder callType(int callType){
+            this.callType = callType;
+            return this;
+        }
         public ActionRequest build(){
-            return new ActionRequest(this.router, this.originDomain);
+            return new ActionRequest(this.router, this.originDomain, this.jsonData, this.callType);
         }
     }
 }

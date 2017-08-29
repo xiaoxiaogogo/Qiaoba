@@ -50,6 +50,11 @@ public class RemoteRouterService extends Service {
         public void responseData(String uuid, ActionResult result) throws RemoteException {
             RemoteRouter.getInstance().responseData(uuid, result);
         }
+
+        @Override
+        public boolean disconnectLocalService(String domain) throws RemoteException {
+            return RemoteRouter.getInstance().disconnectLocalService(domain);
+        }
     }
 
 }

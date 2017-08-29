@@ -14,6 +14,7 @@ public class ActionResult implements Parcelable{
     public static final int CODE_ORIGIN_LOCAL_ROUTER_SERVICE_NOT_REGIESTED = 3;
     public static final int CODE_ROUTER_ERROR = 4;
     public static final int CODE_INVOKE_ROUTER_ROUTER_SERVICE_NOT_REGIESTED = 5;
+    public static final int CODE_REMOTE_SERVICE_STOPING = 6;
     public static final int CODE_ACTION_REQUEST_NULL = 9; // 一般不应该出现， 除非后面支持取消操作
     public static final int CODE_ERROR_NOT_NORMAL = -1;
 

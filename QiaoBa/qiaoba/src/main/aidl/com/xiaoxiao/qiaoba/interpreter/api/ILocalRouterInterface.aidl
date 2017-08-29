@@ -13,5 +13,8 @@ interface ILocalRouterInterface {
     // 提供方（被调用方）
     // 用于链接远程进程服务（）
     boolean responseConnect(String uuid);
-    void resolveRouter(String uuid, String originDomain, String router, String jsonData);
+    void resolveRouter(String uuid, String originDomain, String router, String jsonData, int callType);
+
+    // 断开和远程的aidl链接
+    void disconnectRemote();
 }

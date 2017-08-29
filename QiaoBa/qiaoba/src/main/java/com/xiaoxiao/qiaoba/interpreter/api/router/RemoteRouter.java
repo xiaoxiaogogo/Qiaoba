@@ -1,5 +1,6 @@
 package com.xiaoxiao.qiaoba.interpreter.api.router;
 
+import android.app.IntentService;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -8,13 +9,18 @@ import android.os.IBinder;
 import android.os.RemoteException;
 
 import com.xiaoxiao.qiaoba.interpreter.api.ILocalRouterInterface;
+import com.xiaoxiao.qiaoba.interpreter.api.application.QiaobaApplication;
 import com.xiaoxiao.qiaoba.interpreter.api.exception.LocalRouterServiceNotRegisted;
 import com.xiaoxiao.qiaoba.interpreter.api.service.LocalRouterService;
+import com.xiaoxiao.qiaoba.interpreter.api.service.RemoteRouterService;
 import com.xiaoxiao.qiaoba.interpreter.utils.RouterUtils;
 import com.xiaoxiao.qiaoba.protocol.utils.StringUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by wangfei on 2017/7/23.
@@ -22,17 +28,26 @@ import java.util.Map;
 
 public class RemoteRouter {
 
+    public static final String PROCESS_NAME = "remote";
+
     private Map<String, Class<? extends LocalRouterService>> mLocalServiceMap;
     private Map<String, ServiceConnection> mLocalServiceConnectionMap;
     private Map<String, ILocalRouterInterface> mLocalServiceAIDLMap;
     private Map<String, ActionRequest> mActionRequestQueue;
     private static RemoteRouter mInstance;
+    private Context mContext;
+    private Boolean mIsStoping = false; // 当前service是否停止的标志，
 
     private RemoteRouter(){
         mLocalServiceMap = new HashMap<>();
-        mLocalServiceConnectionMap = new HashMap<>();
-        mLocalServiceAIDLMap = new HashMap<>();
-        mActionRequestQueue = new HashMap<>();
+        // why thread security？ 因为他们都有添加和删除操作，并且是在不同的Binder线程中，因此要保证线程安全
+        mLocalServiceConnectionMap = new ConcurrentHashMap<>();
+        mLocalServiceAIDLMap = new ConcurrentHashMap<>();
+        mActionRequestQueue = new ConcurrentHashMap<>();
+    }
+
+    public void init(QiaobaApplication application) {
+        mContext = application;
     }
 
     private static class Holder{
@@ -94,6 +109,13 @@ public class RemoteRouter {
     }
 
     public boolean connectRouter(final String domain, final String uuid, final String router, Context context){
+        if(mIsStoping){ // 在RemoteService停止期间的请求， 直接返回错误
+            ActionResult result = new ActionResult.Builder()
+                    .code(ActionResult.CODE_REMOTE_SERVICE_STOPING)
+                    .build();
+            responseData(uuid, result);
+            return false;
+        }
         if(mLocalServiceMap.get(domain) == null){
             // 抛出异常： 没有对应的 router，请检查
             responseData(uuid, new ActionResult.Builder()
@@ -137,6 +159,14 @@ public class RemoteRouter {
             throw new RuntimeException("ActionRequest is null in remote responseConnect!!!");
         }
 
+        if(mIsStoping){
+            ActionResult result = new ActionResult.Builder()
+                    .code(ActionResult.CODE_REMOTE_SERVICE_STOPING)
+                    .build();
+            responseData(request.getUuid(), result);
+            return;
+        }
+
         // 1. 从router中解析出 对应的 domain
         final String domain = RouterUtils.getDomainFromRouter(request.getRouter());
         if(StringUtils.isEmpty(domain)){
@@ -151,7 +181,7 @@ public class RemoteRouter {
         // 2. 通过domain，查找对应的 service，发送call命令
         if(mLocalServiceAIDLMap.get(domain) != null){
             try {
-                mLocalServiceAIDLMap.get(domain).resolveRouter(request.getUuid(), request.getOriginDomain(), request.getRouter(), request.getJsonData());
+                mLocalServiceAIDLMap.get(domain).resolveRouter(request.getUuid(), request.getOriginDomain(), request.getRouter(), request.getJsonData(), request.getCallType());
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -170,7 +200,7 @@ public class RemoteRouter {
         String domain = RouterUtils.getDomainFromRouter(request.getRouter());
         if(mLocalServiceAIDLMap.get(domain) != null){
             try {
-                mLocalServiceAIDLMap.get(domain).resolveRouter(uuid, request.getOriginDomain(), request.getRouter(), request.getJsonData());
+                mLocalServiceAIDLMap.get(domain).resolveRouter(uuid, request.getOriginDomain(), request.getRouter(), request.getJsonData(), request.getCallType());
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -184,6 +214,10 @@ public class RemoteRouter {
         if(actionRequest == null){
             // 抛出异常 或者不做处理
         }else {
+            removeActionRequest(uuid); // 将完成的action requset移除
+            if(actionRequest.getCallType() == ActionRequest.TYPE_CALL_NO_CALLBACK){
+                return;
+            }
             ILocalRouterInterface responseAIDL = mLocalServiceAIDLMap.get(actionRequest.getOriginDomain());
             if(responseAIDL != null){
                 try {
@@ -200,5 +234,75 @@ public class RemoteRouter {
     private void removeActionRequest(String uuid){
         mActionRequestQueue.remove(uuid);
     }
+
+    /**
+     * 断开远程和 local的binder aidl的链接
+     * @param domain
+     */
+    public boolean disconnectLocalService(String domain){
+        if(StringUtils.isEmpty(domain)){
+            return false;
+        }else if("remote".equals(domain)){
+            stopSelf();
+            return true;
+        }else if(mLocalServiceConnectionMap.get(domain) == null){
+            return false;
+        } else {
+            ILocalRouterInterface localRouterAIDL = mLocalServiceAIDLMap.get(domain);
+            if(localRouterAIDL != null){
+                try {
+                    localRouterAIDL.disconnectRemote();
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+            mLocalServiceAIDLMap.remove(domain);
+            if(mLocalServiceConnectionMap.get(domain) != null){
+                mContext.unbindService(mLocalServiceConnectionMap.get(domain));
+                mLocalServiceConnectionMap.remove(domain);
+            }
+            return true;
+        }
+    }
+
+    /**
+     * 杀掉自己的进程
+     * 需要先断开所有的链接，然后杀掉自己以及自己的进程
+     */
+    private void stopSelf() {
+        mIsStoping = true;
+        // 开辟子线程执行， 是为了不阻塞binder线程
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                List<String> localKeys = new ArrayList<String>();
+                localKeys.addAll(mLocalServiceAIDLMap.keySet());
+                for (String key : localKeys){
+                    ILocalRouterInterface localRouterAIDL = mLocalServiceAIDLMap.get(key);
+                    if(localRouterAIDL != null){
+                        try {
+                            localRouterAIDL.disconnectRemote();
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    mContext.unbindService(mLocalServiceConnectionMap.get(key));
+                    mLocalServiceConnectionMap.remove(key);
+                    mLocalServiceAIDLMap.remove(key);
+                }
+                mActionRequestQueue.clear();
+                try {
+                    Thread.sleep(1000); // 睡眠一秒， 等上面的所有local router 都和remote断开链接
+                    mContext.stopService(new Intent(mContext, RemoteRouterService.class));
+                    Thread.sleep(1000); // 睡眠一秒， 等RemoteRouterService被系统杀死； 然后退出系统
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.exit(0); // 退出系统， 关掉进程
+            }
+        }){}.start();
+
+    }
+
 
 }
